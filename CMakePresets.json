@@ -1,0 +1,67 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "hidden": true,
+      "name": "base-config",
+      "binaryDir": "${sourceDir}/.nest/build"
+    },
+    {
+      "name": "debug",
+      "inherits": "base-config",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "debug-strict",
+      "inherits": "debug",
+      "cacheVariables": {
+        "NEST_WERRORS": "ON"
+      }
+    },
+    {
+      "name": "debug-asan",
+      "inherits": "debug",
+      "cacheVariables": {
+        "NEST_ASAN": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "inherits": "base-config",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "release-strict",
+      "inherits": "release",
+      "cacheVariables": {
+        "NEST_WERRORS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "debug-strict",
+      "configurePreset": "debug-strict"
+    },
+    {
+      "name": "debug-asan",
+      "configurePreset": "debug-asan"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "release-strict",
+      "configurePreset": "release-strict"
+    }
+  ]
+}
