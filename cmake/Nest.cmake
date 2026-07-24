@@ -1,3 +1,8 @@
+include(Defaults.cmake)
+include(Warnings.cmake)
+include(Sanitizers.cmake)
+include(CompileCommands.cmake)
+
 include(FetchContent)
 include_guard(DIRECTORY)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
@@ -251,3 +256,6 @@ function(Nest_Import qualified_target)
   # --- Create the CMake target ---
   __nest_add_interface_dep(${ns} ${target} ${fetch_id} "${subdir}")
 endfunction()
+
+
+include(Dependencies.cmake)
