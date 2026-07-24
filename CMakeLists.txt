@@ -1,14 +1,21 @@
 cmake_minimum_required(VERSION 3.28)
 
-include(vendor/nest.cmake)
-project(${nest_TOPNAME})
+project(px
+  VERSION 0.1.0
+  DESCRIPTION "A curated, lightweight, modern C++ project"
+  LANGUAGES CXX C
+)
 
-nest_INIT(20)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-nest_ADD_DEP(glm 1.0.3 https://github.com/g-truc/glm/archive/refs/tags/1.0.3.zip OFF)
-nest_ADD_DEP(glfw 3.4 https://github.com/glfw/glfw/archive/refs/tags/3.4.zip OFF)
+include(cmake/Warnings.cmake)
+include(cmake/Sanitizers.cmake)
+include(cmake/Nest.cmake)
+include(cmake/Dependencies.cmake)
 
-nest_DETECT_PROJECTS()
+add_subdirectory(projects)
+add_subdirectory(tests)
 
-# add_subdirectory(mylib1)
-# add_subdirectory(demo2)
+include(cmake/CompileCommands.cmake)

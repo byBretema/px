@@ -1,22 +1,11 @@
 
-#
-## NEST Framework / CMake
-#################################################################################
-build/
+# --- NEST Framework / CMake ---------------------------------------------------
+
 .nest/
 compile_commands.json
-CMakeCache.txt
-CMakeFiles/
-CMakeScripts/
-Testing/
-Makefile
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
 
-#
-## C / C++ Compiled Artifacts & Tooling
-################################################################################
+
+# --- C / C++ Compiled Artifacts & Tooling -------------------------------------
 
 # Objects & Libraries
 *.o
@@ -43,9 +32,8 @@ compile_commands.json
 *.ilk
 *.dwo
 
-#
-## Python
-################################################################################
+
+# --- Python -------------------------------------------------------------------
 
 # Byte-compiled / optimized
 __pycache__/
@@ -68,9 +56,7 @@ pip-delete-this-directory.txt
 .ruff_cache/
 
 
-#
-## Bash / Shell / General Scripts
-################################################################################
+# --- Bash / Shell / General Scripts -------------------------------------------
 
 *.log
 *.tmp
@@ -79,9 +65,7 @@ pip-delete-this-directory.txt
 *~
 
 
-#
-## IDEs & OS Noise
-################################################################################
+# --- IDEs & OS Noise ----------------------------------------------------------
 
 # VS Code (Ignores personal workspace settings, keeps shared team settings)
 .vscode/*
@@ -101,61 +85,3 @@ cmake-build-*/
 # OS Artifacts
 .DS_Store
 Thumbs.db
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# debug information files
-*.dwo
