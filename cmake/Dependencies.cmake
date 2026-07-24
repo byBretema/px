@@ -107,6 +107,8 @@ foreach(tgt catch_main test_span test_span_contract_checking)
     set_target_properties(${tgt} PROPERTIES EXCLUDE_FROM_ALL ON)
   endif()
 endforeach()
+file(WRITE "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+  "set(CTEST_CUSTOM_TESTS_IGNORE test_span test_span_contract_checking)")
 
 # ---------------------------------------------------------------------------
 # Function2 — fu2::function

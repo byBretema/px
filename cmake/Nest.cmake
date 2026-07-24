@@ -1,7 +1,7 @@
-include(Defaults.cmake)
-include(Warnings.cmake)
-include(Sanitizers.cmake)
-include(CompileCommands.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/Defaults.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/Warnings.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/Sanitizers.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CompileCommands.cmake)
 
 include(FetchContent)
 include_guard(DIRECTORY)
@@ -257,5 +257,148 @@ function(Nest_Import qualified_target)
   __nest_add_interface_dep(${ns} ${target} ${fetch_id} "${subdir}")
 endfunction()
 
+# ---------------------------------------------------------------------------
+# Scaffolding — Nest_Exe / Nest_Lib / Nest_HLib / Nest_Link / Nest_GenerateExport
+# ---------------------------------------------------------------------------
 
-include(Dependencies.cmake)
+set(__nest_g_NAMESPACE "${PROJECT_NAME}" CACHE INTERNAL "Namespace for install targets")
+set(__nest_g_EXPORT_TARGETS "" CACHE INTERNAL "Targets registered for export")
+
+function(__nest_GLOB root_dir out_sources out_headers)
+  file(GLOB _nest_srcs CONFIGURE_DEPENDS
+    "${root_dir}/*.cpp" "${root_dir}/*.cc" "${root_dir}/*.c" "${root_dir}/*.cxx")
+  file(GLOB _nest_hdrs CONFIGURE_DEPENDS
+    "${root_dir}/*.hpp" "${root_dir}/*.hh" "${root_dir}/*.h" "${root_dir}/*.hxx")
+  set(${out_sources} ${_nest_srcs} PARENT_SCOPE)
+  set(${out_headers} ${_nest_hdrs} PARENT_SCOPE)
+endfunction()
+
+
+macro(Nest_Exe name)
+  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
+  add_executable(${name} ${_nest_srcs} ${_nest_hdrs} ${ARGN})
+  if(TARGET Nest_AllDeps)
+    target_link_libraries(${name} PRIVATE Nest_AllDeps)
+  endif()
+  target_include_directories(${name} PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+  list(APPEND __nest_g_EXPORT_TARGETS ${name})
+  set(__nest_g_EXPORT_TARGETS "${__nest_g_EXPORT_TARGETS}" CACHE INTERNAL "")
+endmacro()
+
+
+macro(Nest_Lib name type)
+  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
+  add_library(${name} ${type} ${_nest_srcs} ${_nest_hdrs} ${ARGN})
+  if(TARGET Nest_AllDeps)
+    target_link_libraries(${name} PUBLIC Nest_AllDeps)
+  endif()
+  target_include_directories(${name} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/${__nest_g_NAMESPACE}>)
+  target_include_directories(${name} PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+  list(APPEND __nest_g_EXPORT_TARGETS ${name})
+  set(__nest_g_EXPORT_TARGETS "${__nest_g_EXPORT_TARGETS}" CACHE INTERNAL "")
+endmacro()
+
+
+macro(Nest_HLib name)
+  add_library(${name} INTERFACE)
+  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
+  if(_nest_hdrs)
+    target_sources(${name} INTERFACE ${_nest_hdrs})
+  endif()
+  target_include_directories(${name} INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/${__nest_g_NAMESPACE}>)
+  list(APPEND __nest_g_EXPORT_TARGETS ${name})
+  set(__nest_g_EXPORT_TARGETS "${__nest_g_EXPORT_TARGETS}" CACHE INTERNAL "")
+endmacro()
+
+
+macro(Nest_Link target)
+  target_link_libraries(${target} PRIVATE ${ARGN})
+endmacro()
+
+
+macro(Nest_EnableTests)
+  if(PROJECT_IS_TOP_LEVEL)
+    enable_testing()
+  endif()
+endmacro()
+
+
+macro(Nest_Test name)
+  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
+  add_executable(${name} ${_nest_srcs} ${_nest_hdrs} ${ARGN})
+  if(TARGET Nest_AllDeps)
+    target_link_libraries(${name} PRIVATE Nest_AllDeps)
+  endif()
+  target_include_directories(${name} PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+  add_test(NAME ${name} COMMAND ${name})
+endmacro()
+
+
+function(Nest_GenerateExport)
+  cmake_parse_arguments(ARG "" "NAMESPACE" "DEPS" ${ARGN})
+
+  if(ARG_NAMESPACE)
+    set(__nest_g_NAMESPACE "${ARG_NAMESPACE}" CACHE INTERNAL "")
+  endif()
+  set(export_set "${__nest_g_NAMESPACE}-targets")
+
+  if(NOT __nest_g_EXPORT_TARGETS)
+    message(STATUS "[nest] · No targets registered for export")
+    return()
+  endif()
+
+  include(CMakePackageConfigHelpers)
+
+  install(TARGETS ${__nest_g_EXPORT_TARGETS}
+    EXPORT ${export_set}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+  install(EXPORT ${export_set}
+    FILE ${export_set}.cmake
+    NAMESPACE ${__nest_g_NAMESPACE}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE})
+
+  set(config_content "@PACKAGE_INIT@\n\n")
+  foreach(dep ${ARG_DEPS})
+    string(APPEND config_content "find_dependency(${dep})\n")
+  endforeach()
+  string(APPEND config_content "include(\"\${CMAKE_CURRENT_LIST_DIR}/${export_set}.cmake\")\n")
+  string(APPEND config_content "set(${__nest_g_NAMESPACE}_FOUND TRUE)\n")
+
+  set(config_in_path "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}Config.cmake.in")
+  file(WRITE "${config_in_path}" "${config_content}")
+
+  configure_package_config_file(
+    "${config_in_path}"
+    "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}Config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE}")
+
+  install(FILES "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}Config.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE}")
+
+  if(PROJECT_VERSION)
+    write_basic_package_version_file(
+      "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}ConfigVersion.cmake"
+      VERSION ${PROJECT_VERSION}
+      COMPATIBILITY AnyNewerVersion)
+    install(FILES "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}ConfigVersion.cmake"
+      DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE}")
+  endif()
+
+  message(STATUS "[nest] · Export generated (${__nest_g_NAMESPACE} :: ${__nest_g_EXPORT_TARGETS})")
+endfunction()
+
+
+include(${CMAKE_CURRENT_LIST_DIR}/Dependencies.cmake)
