@@ -1,5 +1,6 @@
 include(FetchContent)
 include_guard(DIRECTORY)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 
 set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.nest/vendor")
 set(FETCHCONTENT_QUIET ON)

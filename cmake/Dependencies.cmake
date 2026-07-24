@@ -101,6 +101,13 @@ Nest_Import(tc::span
   TAG        master
 )
 
+# Exclude span's bundled test targets from ALL (broken with GCC 16 + glibc)
+foreach(tgt catch_main test_span test_span_contract_checking)
+  if(TARGET ${tgt})
+    set_target_properties(${tgt} PROPERTIES EXCLUDE_FROM_ALL ON)
+  endif()
+endforeach()
+
 # ---------------------------------------------------------------------------
 # Function2 — fu2::function
 # ---------------------------------------------------------------------------
