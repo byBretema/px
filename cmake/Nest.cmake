@@ -179,7 +179,7 @@ endfunction()
 # once and the include directory is shared.
 # ---------------------------------------------------------------------------
 function(Nest_Import qualified_target)
-  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR" "OPTIONS" ${ARGN})
+  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH" "OPTIONS" ${ARGN})
 
   # --- Resolve repository URL from shorthand or full URL ---
   set(shorthand "")
@@ -242,7 +242,11 @@ function(Nest_Import qualified_target)
       endif()
     endforeach()
 
-    FetchContent_MakeAvailable(${fetch_id})
+    FetchContent_Populate(${fetch_id})
+    if(ARG_PATCH)
+      include("${ARG_PATCH}")
+    endif()
+    add_subdirectory(${${fetch_id}_SOURCE_DIR} ${${fetch_id}_BINARY_DIR})
     set(${fetch_guard} TRUE)
   endif()
 

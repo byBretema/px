@@ -99,16 +99,8 @@ Nest_Import(tl::expected
 Nest_Import(tc::span
   GITHUB tcbrindle/span
   TAG        master
+  PATCH      "${CMAKE_CURRENT_LIST_DIR}/patches/tc-span-disable-testing.cmake"
 )
-
-# Exclude span's bundled test targets from ALL (broken with GCC 16 + glibc)
-foreach(tgt catch_main test_span test_span_contract_checking)
-  if(TARGET ${tgt})
-    set_target_properties(${tgt} PROPERTIES EXCLUDE_FROM_ALL ON)
-  endif()
-endforeach()
-file(WRITE "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
-  "set(CTEST_CUSTOM_TESTS_IGNORE test_span test_span_contract_checking)")
 
 # ---------------------------------------------------------------------------
 # Function2 — fu2::function
