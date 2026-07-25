@@ -162,5 +162,3 @@ Nest_Import(EASTL::EASTL
 #   OPTIONS    SDL_GPU_DISABLE_PNG=ON SDL_GPU_DISABLE_NPOT=ON
 # )
 # ---------------------------------------------------------------------------
-
-message(STATUS "All dependencies fetched and configured.")

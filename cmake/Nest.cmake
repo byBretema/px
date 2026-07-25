@@ -1,8 +1,3 @@
-include(${CMAKE_CURRENT_LIST_DIR}/Defaults.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/Warnings.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/Sanitizers.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/CompileCommands.cmake)
-
 include(FetchContent)
 include_guard(DIRECTORY)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
@@ -242,11 +237,52 @@ function(Nest_Import qualified_target)
       endif()
     endforeach()
 
-    FetchContent_Populate(${fetch_id})
+    string(TOUPPER "${fetch_id}" upper_id)
+
     if(ARG_PATCH)
+      set(src_dir "${FETCHCONTENT_BASE_DIR}/${fetch_id}-src")
+      if(NOT EXISTS "${src_dir}")
+        file(MAKE_DIRECTORY "${src_dir}")
+        execute_process(
+          COMMAND git clone --depth 1 --branch "${resolved_tag}"
+                  "${repo_url}" "${src_dir}"
+          RESULT_VARIABLE clone_ok
+          ERROR_VARIABLE  clone_err
+        )
+        if(NOT clone_ok EQUAL 0)
+          message(FATAL_ERROR
+            "Nest_Import: git clone failed for ${qualified_target}\n${clone_err}")
+        endif()
+        set(status "From fetch -> ")
+      else()
+        set(status "From cache -> ")
+      endif()
+      set(FETCHCONTENT_SOURCE_DIR_${upper_id} "${src_dir}" CACHE INTERNAL "")
+      set(${fetch_id}_SOURCE_DIR "${src_dir}")
       include("${ARG_PATCH}")
+      set(suffix "  (patched)")
+    else()
+      if(DEFINED FETCHCONTENT_SOURCE_DIR_${upper_id}
+         AND FETCHCONTENT_SOURCE_DIR_${upper_id})
+        set(src_dir "${FETCHCONTENT_SOURCE_DIR_${upper_id}}")
+      else()
+        set(src_dir "${FETCHCONTENT_BASE_DIR}/${fetch_id}-src")
+      endif()
+      if(EXISTS "${src_dir}")
+        set(status "From cache -> ")
+      else()
+        set(status "From fetch -> ")
+      endif()
+      set(suffix "")
     endif()
-    add_subdirectory(${${fetch_id}_SOURCE_DIR} ${${fetch_id}_BINARY_DIR})
+
+    message(STATUS "[nest] · ${status}${qualified_target}${suffix}")
+    set(saved_log_level "${CMAKE_MESSAGE_LOG_LEVEL}")
+    set(CMAKE_MESSAGE_LOG_LEVEL "NOTICE")
+    FetchContent_MakeAvailable(${fetch_id})
+    if(saved_log_level)
+      set(CMAKE_MESSAGE_LOG_LEVEL "${saved_log_level}")
+    endif()
     set(${fetch_guard} TRUE)
   endif()
 
@@ -402,7 +438,18 @@ function(Nest_GenerateExport)
   endif()
 
   message(STATUS "[nest] · Export generated (${__nest_g_NAMESPACE} :: ${__nest_g_EXPORT_TARGETS})")
+  message("")
 endfunction()
 
 
+message("")
 include(${CMAKE_CURRENT_LIST_DIR}/Dependencies.cmake)
+message(STATUS "[nest] · All dependencies fetched and configured.\n            Interface target -> Nest_AllDeps")
+message("")
+
+
+include(${CMAKE_CURRENT_LIST_DIR}/Defaults.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/Warnings.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/Sanitizers.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CompileCommands.cmake)
+
