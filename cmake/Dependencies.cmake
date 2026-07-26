@@ -78,28 +78,11 @@ Nest_Import(ctre::ctre
 )
 
 # ---------------------------------------------------------------------------
-# tl::optional
-# ---------------------------------------------------------------------------
-Nest_Import(tl::optional
-  GITHUB TartanLlama/optional
-  TAG        v1.1.0
-)
-
-# ---------------------------------------------------------------------------
-# tl::expected
+# tl::expected — C++20 polyfill for std::expected (C++23)
 # ---------------------------------------------------------------------------
 Nest_Import(tl::expected
   GITHUB TartanLlama/expected
   TAG        v1.1.0
-)
-
-# ---------------------------------------------------------------------------
-# tc::span
-# ---------------------------------------------------------------------------
-Nest_Import(tc::span
-  GITHUB tcbrindle/span
-  TAG        master
-  PATCH      "${CMAKE_CURRENT_LIST_DIR}/patches/tc-span-disable-testing.cmake"
 )
 
 # ---------------------------------------------------------------------------
