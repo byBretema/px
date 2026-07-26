@@ -1,10 +1,10 @@
 include(FetchContent)
 include_guard(DIRECTORY)
+
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 
 set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.nest/vendor")
 set(FETCHCONTENT_QUIET ON)
-
 
 add_library(Nest_AllDeps INTERFACE)
 
@@ -16,6 +16,14 @@ macro(__nest_add_interface_dep namespace target fetch_id subdir)
   endif()
   target_link_libraries(Nest_AllDeps INTERFACE ${namespace}::${target})
 endmacro()
+
+macro(nest_message)
+  message(STATUS "[nest] · " ${ARGN})
+endmacro()
+
+message("")
+nest_message("Compiler for C++ -> ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
+nest_message("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})")
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +284,7 @@ function(Nest_Import qualified_target)
       set(suffix "")
     endif()
 
-    message(STATUS "[nest] · ${status}${qualified_target}${suffix}")
+    nest_message("${status}${qualified_target}${suffix}")
     set(saved_log_level "${CMAKE_MESSAGE_LOG_LEVEL}")
     set(CMAKE_MESSAGE_LOG_LEVEL "NOTICE")
     FetchContent_MakeAvailable(${fetch_id})
@@ -392,7 +400,7 @@ function(Nest_GenerateExport)
   set(export_set "${__nest_g_NAMESPACE}-targets")
 
   if(NOT __nest_g_EXPORT_TARGETS)
-    message(STATUS "[nest] · No targets registered for export")
+    nest_message("No targets registered for export")
     return()
   endif()
 
@@ -437,14 +445,14 @@ function(Nest_GenerateExport)
       DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE}")
   endif()
 
-  message(STATUS "[nest] · Export generated (${__nest_g_NAMESPACE} :: ${__nest_g_EXPORT_TARGETS})")
+  nest_message("Export generated (${__nest_g_NAMESPACE} :: ${__nest_g_EXPORT_TARGETS})")
   message("")
 endfunction()
 
 
 message("")
 include(${CMAKE_CURRENT_LIST_DIR}/Dependencies.cmake)
-message(STATUS "[nest] · All dependencies fetched and configured.\n            Interface target -> Nest_AllDeps")
+nest_message("All dependencies fetched and configured.\n            Interface target -> Nest_AllDeps")
 message("")
 
 

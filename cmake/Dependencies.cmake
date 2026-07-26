@@ -32,7 +32,7 @@ Nest_Import(httplib::httplib
 Nest_Import(cpr::cpr
   GITHUB libcpr/cpr
   TAG        1.11.1
-  OPTIONS    CPR_BUILD_TESTS=OFF CPR_BUILD_EXAMPLES=OFF CPR_USE_SYSTEM_CURL=OFF CPR_FIND_PACKAGE_ARGS=ON
+  OPTIONS    CPR_BUILD_TESTS=OFF CPR_BUILD_EXAMPLES=OFF CPR_USE_SYSTEM_CURL=ON
 )
 
 # ---------------------------------------------------------------------------
@@ -128,17 +128,11 @@ Nest_Import(range-v3::range-v3
 )
 
 # ---------------------------------------------------------------------------
-# Abseil — flat_hash_map / flat_hash_set
+# Hash map/set — unordered_dense (replaces abseil flat_hash_map/flat_hash_set)
 # ---------------------------------------------------------------------------
-Nest_Import(absl::flat_hash_map
-  GITHUB abseil/abseil-cpp
-  TAG        20250127.0
-  OPTIONS    ABSL_PROPAGATE_CXX_STD=ON ABSL_BUILD_TESTING=OFF ABSL_USE_EXTERNAL_GOOGLETEST=OFF
-)
-Nest_Import(absl::flat_hash_set
-  GITHUB abseil/abseil-cpp
-  TAG        20250127.0
-  OPTIONS    ABSL_PROPAGATE_CXX_STD=ON ABSL_BUILD_TESTING=OFF ABSL_USE_EXTERNAL_GOOGLETEST=OFF
+Nest_Import(unordered_dense::unordered_dense
+  GITHUB martinus/unordered_dense
+  TAG        v4.8.1
 )
 
 # ---------------------------------------------------------------------------
