@@ -4,7 +4,7 @@
     {
       "hidden": true,
       "name": "base",
-      "binaryDir": "${sourceDir}/.nest/build"
+      "binaryDir": "${sourceDir}/build"
     },
     {
       "hidden": true,
@@ -19,17 +19,17 @@
     {
       "hidden": true,
       "name": "werror",
-      "cacheVariables": { "NEST_WERRORS": "ON" }
+      "cacheVariables": { "WARNINGS_AS_ERRORS": "ON" }
     },
     {
       "hidden": true,
       "name": "asan",
-      "cacheVariables": { "NEST_ASAN": "ON" }
+      "cacheVariables": { "ENABLE_ASAN": "ON" }
     },
     {
       "hidden": true,
       "name": "ubsan",
-      "cacheVariables": { "NEST_UBSAN": "ON" }
+      "cacheVariables": { "ENABLE_UBSAN": "ON" }
     },
     {
       "hidden": true,

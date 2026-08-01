@@ -1,7 +1,7 @@
 
-# --- NEST Framework / CMake ---------------------------------------------------
+# --- CMake Framework / Build --------------------------------------------------
 
-.nest/
+build/
 compile_commands.json
 
 

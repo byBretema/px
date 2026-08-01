@@ -1,1 +1,1 @@
-Nest_Test(test_core)
+make_test(test_core)

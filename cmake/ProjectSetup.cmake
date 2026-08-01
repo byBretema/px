@@ -6,31 +6,37 @@ cmake_policy(SET CMP0135 NEW)
 
 set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 
-set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.nest/vendor")
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/build/vendor")
 set(FETCHCONTENT_QUIET ON)
 
-add_library(Nest_AllDeps INTERFACE)
+add_library(_all_dependencies INTERFACE)
 
-macro(__nest_add_interface_dep namespace target fetch_id subdir)
+macro(__add_interface_dependency namespace target fetch_id subdir)
   if(NOT TARGET ${namespace}::${target})
     add_library(${namespace}_${target} INTERFACE)
     target_include_directories(${namespace}_${target} INTERFACE "${${fetch_id}_SOURCE_DIR}/${subdir}")
     add_library(${namespace}::${target} ALIAS ${namespace}_${target})
   endif()
-  target_link_libraries(Nest_AllDeps INTERFACE ${namespace}::${target})
+  target_link_libraries(_all_dependencies INTERFACE ${namespace}::${target})
 endmacro()
 
-macro(nest_message)
-  message(STATUS "[nest] · " ${ARGN})
+set(PRE_LOG_TAG "" CACHE STRING "Prefix for framework log messages")
+
+macro(log_status)
+  if(PRE_LOG_TAG)
+    message(STATUS "${PRE_LOG_TAG} " ${ARGN})
+  else()
+    message(STATUS ${ARGN})
+  endif()
 endmacro()
 
 message("")
-nest_message("Compiler for C++ -> ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
-nest_message("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})")
+log_status("Compiler for C++ -> ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
+log_status("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})")
 
 
 # ---------------------------------------------------------------------------
-# __nest_detect_include_subdir — auto-detect the include subdirectory for a
+# __detect_include_subdir — auto-detect the include subdirectory for a
 #   FetchContent dependency after it has been populated.
 #
 #   fetch_id   : name of the FetchContent variable (the first argument passed
@@ -48,11 +54,11 @@ nest_message("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERS
 #   3.  A top-level dir contains     →  "dir/include" if it has an include/
 #       headers                          subdirectory, else "."
 # ---------------------------------------------------------------------------
-function(__nest_detect_include_subdir fetch_id out_var)
+function(__detect_include_subdir fetch_id out_var)
   set(src_dir "${${fetch_id}_SOURCE_DIR}")
 
   if(NOT IS_DIRECTORY "${src_dir}")
-    message(WARNING "Nest: source dir '${src_dir}' not found for ${fetch_id}, defaulting to '.'")
+    message(WARNING "ProjectSetup: source dir '${src_dir}' not found for ${fetch_id}, defaulting to '.'")
     set(${out_var} "." PARENT_SCOPE)
     return()
   endif()
@@ -109,13 +115,13 @@ function(__nest_detect_include_subdir fetch_id out_var)
   endforeach()
 
   # --- Fallback ---
-  message(WARNING "Nest: could not detect subdir for ${fetch_id}, defaulting to '.'")
+  message(WARNING "ProjectSetup: could not detect subdir for ${fetch_id}, defaulting to '.'")
   set(${out_var} "." PARENT_SCOPE)
 endfunction()
 
 
 # ---------------------------------------------------------------------------
-# __nest_resolve_tag — resolve a user-supplied TAG to an actual Git ref
+# __resolve_tag — resolve a user-supplied TAG to an actual Git ref
 #   using git ls-remote.
 #
 #   If TAG starts with 'v' it is trusted verbatim.
@@ -125,7 +131,7 @@ endfunction()
 #
 #   The result (exact tag name) is returned in out_var.
 # ---------------------------------------------------------------------------
-function(__nest_resolve_tag repo_url user_tag out_var)
+function(__resolve_tag repo_url user_tag out_var)
   if(user_tag MATCHES "^v")
     set(${out_var} "${user_tag}" PARENT_SCOPE)
     return()
@@ -164,7 +170,7 @@ endfunction()
 
 
 # ---------------------------------------------------------------------------
-# Nest_Import — one-shot FetchContent declaration, population, and target creation for a header-only library.
+# import_dependency — one-shot FetchContent declaration, population, and target creation for a header-only library.
 #
 #   qualified_target   CMake target name in the form "namespace::target".
 #                      This becomes the actual target users link against.
@@ -184,7 +190,7 @@ endfunction()
 # Multiple calls sharing the same URL are safe — the fetch happens only
 # once and the include directory is shared.
 # ---------------------------------------------------------------------------
-function(Nest_Import qualified_target)
+function(import_dependency qualified_target)
   cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH" "OPTIONS" ${ARGN})
 
   # --- Resolve repository URL from shorthand or full URL ---
@@ -202,19 +208,19 @@ function(Nest_Import qualified_target)
     set(repo_url "https://bitbucket.org/${ARG_BITBUCKET}.git")
     set(shorthand "${ARG_BITBUCKET}")
   else()
-    message(FATAL_ERROR "Nest_Import: one of REPOSITORY / GITHUB / GITLAB / BITBUCKET is required")
+    message(FATAL_ERROR "import_dependency: one of REPOSITORY / GITHUB / GITLAB / BITBUCKET is required")
   endif()
 
   # --- Validate required arguments ---
   if(NOT ARG_TAG)
-    message(FATAL_ERROR "Nest_Import: TAG is required")
+    message(FATAL_ERROR "import_dependency: TAG is required")
   endif()
 
   # --- Parse qualified_target into namespace and target ---
   string(REPLACE "::" ";" parts "${qualified_target}")
   list(LENGTH parts len)
   if(NOT len EQUAL 2)
-    message(FATAL_ERROR "Nest_Import: first arg must be ns::target, got '${qualified_target}'")
+    message(FATAL_ERROR "import_dependency: first arg must be ns::target, got '${qualified_target}'")
   endif()
   list(GET parts 0 ns)
   list(GET parts 1 target)
@@ -230,9 +236,9 @@ function(Nest_Import qualified_target)
   string(TOLOWER "${fetch_id}" fetch_id)
 
   # --- Fetch the dependency (only once per fetch_id) ---
-  set(fetch_guard __nest_fetched_${fetch_id})
+  set(fetch_guard __fetched_${fetch_id})
   if(NOT DEFINED ${fetch_guard})
-    __nest_resolve_tag(${repo_url} "${ARG_TAG}" resolved_tag)
+    __resolve_tag(${repo_url} "${ARG_TAG}" resolved_tag)
 
     FetchContent_Declare(${fetch_id}
       GIT_REPOSITORY ${repo_url}
@@ -244,7 +250,7 @@ function(Nest_Import qualified_target)
       if(opt MATCHES "^([^=]+)=(.*)$")
         set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE STRING "" FORCE)
       else()
-        message(FATAL_ERROR "Nest_Import: OPTIONS must be KEY=VALUE, got: ${opt}")
+        message(FATAL_ERROR "import_dependency: OPTIONS must be KEY=VALUE, got: ${opt}")
       endif()
     endforeach()
 
@@ -262,7 +268,7 @@ function(Nest_Import qualified_target)
         )
         if(NOT clone_ok EQUAL 0)
           message(FATAL_ERROR
-            "Nest_Import: git clone failed for ${qualified_target}\n${clone_err}")
+            "import_dependency: git clone failed for ${qualified_target}\n${clone_err}")
         endif()
         set(status "From fetch -> ")
       else()
@@ -290,7 +296,7 @@ function(Nest_Import qualified_target)
       set(suffix "")
     endif()
 
-    nest_message("${status}${qualified_target}${suffix}")
+    log_status("${status}${qualified_target}${suffix}")
     set(saved_log_level "${CMAKE_MESSAGE_LOG_LEVEL}")
     set(CMAKE_MESSAGE_LOG_LEVEL "NOTICE")
     FetchContent_MakeAvailable(${fetch_id})
@@ -304,115 +310,127 @@ function(Nest_Import qualified_target)
   if(DEFINED ARG_SUBDIR)
     set(subdir "${ARG_SUBDIR}")
   else()
-    __nest_detect_include_subdir(${fetch_id} subdir)
+    __detect_include_subdir(${fetch_id} subdir)
   endif()
 
   # --- Create the CMake target ---
-  __nest_add_interface_dep(${ns} ${target} ${fetch_id} "${subdir}")
+  __add_interface_dependency(${ns} ${target} ${fetch_id} "${subdir}")
 endfunction()
 
 # ---------------------------------------------------------------------------
-# Scaffolding — Nest_Exe / Nest_Lib / Nest_HLib / Nest_Link / Nest_GenerateExport
+# Scaffolding — make_exe / make_lib / make_lib_header_only / link_dependencies /
+#   make_export
 # ---------------------------------------------------------------------------
 
-set(__nest_g_NAMESPACE "${PROJECT_NAME}" CACHE INTERNAL "Namespace for install targets")
-set(__nest_g_EXPORT_TARGETS "" CACHE INTERNAL "Targets registered for export")
+set(__export_namespace "${PROJECT_NAME}" CACHE INTERNAL "Namespace for install targets")
+set(__export_targets "" CACHE INTERNAL "Targets registered for export")
 
-function(__nest_GLOB root_dir out_sources out_headers)
-  file(GLOB _nest_srcs CONFIGURE_DEPENDS
+function(__glob_sources root_dir out_sources out_headers)
+  file(GLOB _sources CONFIGURE_DEPENDS
     "${root_dir}/*.cpp" "${root_dir}/*.cc" "${root_dir}/*.c" "${root_dir}/*.cxx")
-  file(GLOB _nest_hdrs CONFIGURE_DEPENDS
+  file(GLOB _headers CONFIGURE_DEPENDS
     "${root_dir}/*.hpp" "${root_dir}/*.hh" "${root_dir}/*.h" "${root_dir}/*.hxx")
-  set(${out_sources} ${_nest_srcs} PARENT_SCOPE)
-  set(${out_headers} ${_nest_hdrs} PARENT_SCOPE)
+  set(${out_sources} ${_sources} PARENT_SCOPE)
+  set(${out_headers} ${_headers} PARENT_SCOPE)
 endfunction()
 
 
-macro(Nest_Exe name)
-  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
-  add_executable(${name} ${_nest_srcs} ${_nest_hdrs} ${ARGN})
-  if(TARGET Nest_AllDeps)
-    target_link_libraries(${name} PRIVATE Nest_AllDeps)
+macro(make_exe name)
+  __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
+  add_executable(${name} ${_sources} ${_headers} ${ARGN})
+  if(TARGET _all_dependencies)
+    target_link_libraries(${name} PRIVATE _all_dependencies)
   endif()
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
-  list(APPEND __nest_g_EXPORT_TARGETS ${name})
-  set(__nest_g_EXPORT_TARGETS "${__nest_g_EXPORT_TARGETS}" CACHE INTERNAL "")
+  setup_warnings(${name})
+  setup_sanitizers(${name})
+  list(APPEND __export_targets ${name})
+  set(__export_targets "${__export_targets}" CACHE INTERNAL "")
 endmacro()
 
 
-macro(Nest_Lib name type)
-  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
-  add_library(${name} ${type} ${_nest_srcs} ${_nest_hdrs} ${ARGN})
-  if(TARGET Nest_AllDeps)
-    target_link_libraries(${name} PUBLIC Nest_AllDeps)
+macro(make_lib name type)
+  __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
+  add_library(${name} ${type} ${_sources} ${_headers} ${ARGN})
+  if(TARGET _all_dependencies)
+    target_link_libraries(${name} PUBLIC _all_dependencies)
   endif()
   target_include_directories(${name} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/${__nest_g_NAMESPACE}>)
+    $<INSTALL_INTERFACE:include/${__export_namespace}>)
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
-  list(APPEND __nest_g_EXPORT_TARGETS ${name})
-  set(__nest_g_EXPORT_TARGETS "${__nest_g_EXPORT_TARGETS}" CACHE INTERNAL "")
+  setup_warnings(${name})
+  setup_sanitizers(${name})
+  list(APPEND __export_targets ${name})
+  set(__export_targets "${__export_targets}" CACHE INTERNAL "")
 endmacro()
 
 
-macro(Nest_HLib name)
+macro(make_lib_header_only name)
   add_library(${name} INTERFACE)
-  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
-  if(_nest_hdrs)
-    target_sources(${name} INTERFACE ${_nest_hdrs})
+  __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
+  if(_headers)
+    target_sources(${name} INTERFACE ${_headers})
   endif()
   target_include_directories(${name} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/${__nest_g_NAMESPACE}>)
-  list(APPEND __nest_g_EXPORT_TARGETS ${name})
-  set(__nest_g_EXPORT_TARGETS "${__nest_g_EXPORT_TARGETS}" CACHE INTERNAL "")
+    $<INSTALL_INTERFACE:include/${__export_namespace}>)
+  list(APPEND __export_targets ${name})
+  set(__export_targets "${__export_targets}" CACHE INTERNAL "")
 endmacro()
 
 
-macro(Nest_Link target)
+macro(make_hlib)
+  make_lib_header_only(${ARGN})
+endmacro()
+
+
+macro(link_dependencies target)
   target_link_libraries(${target} PRIVATE ${ARGN})
 endmacro()
 
 
-macro(Nest_EnableTests)
+macro(setup_testing)
   if(PROJECT_IS_TOP_LEVEL)
     enable_testing()
   endif()
 endmacro()
 
 
-macro(Nest_Test name)
-  __nest_GLOB("${CMAKE_CURRENT_SOURCE_DIR}" _nest_srcs _nest_hdrs)
-  add_executable(${name} ${_nest_srcs} ${_nest_hdrs} ${ARGN})
-  if(TARGET Nest_AllDeps)
-    target_link_libraries(${name} PRIVATE Nest_AllDeps)
+macro(make_test name)
+  __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
+  add_executable(${name} ${_sources} ${_headers} ${ARGN})
+  if(TARGET _all_dependencies)
+    target_link_libraries(${name} PRIVATE _all_dependencies)
   endif()
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+  setup_warnings(${name})
+  setup_sanitizers(${name})
   add_test(NAME ${name} COMMAND ${name})
 endmacro()
 
 
-function(Nest_GenerateExport)
+function(make_export)
   cmake_parse_arguments(ARG "" "NAMESPACE" "DEPS" ${ARGN})
 
   if(ARG_NAMESPACE)
-    set(__nest_g_NAMESPACE "${ARG_NAMESPACE}" CACHE INTERNAL "")
+    set(__export_namespace "${ARG_NAMESPACE}" CACHE INTERNAL "")
   endif()
-  set(export_set "${__nest_g_NAMESPACE}-targets")
+  set(export_set "${__export_namespace}-targets")
 
-  if(NOT __nest_g_EXPORT_TARGETS)
-    nest_message("No targets registered for export")
+  if(NOT __export_targets)
+    log_status("No targets registered for export")
     return()
   endif()
 
   include(CMakePackageConfigHelpers)
 
-  install(TARGETS ${__nest_g_EXPORT_TARGETS}
+  install(TARGETS ${__export_targets}
     EXPORT ${export_set}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -421,44 +439,44 @@ function(Nest_GenerateExport)
 
   install(EXPORT ${export_set}
     FILE ${export_set}.cmake
-    NAMESPACE ${__nest_g_NAMESPACE}::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE})
+    NAMESPACE ${__export_namespace}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${__export_namespace})
 
   set(config_content "@PACKAGE_INIT@\n\n")
   foreach(dep ${ARG_DEPS})
     string(APPEND config_content "find_dependency(${dep})\n")
   endforeach()
   string(APPEND config_content "include(\"\${CMAKE_CURRENT_LIST_DIR}/${export_set}.cmake\")\n")
-  string(APPEND config_content "set(${__nest_g_NAMESPACE}_FOUND TRUE)\n")
+  string(APPEND config_content "set(${__export_namespace}_FOUND TRUE)\n")
 
-  set(config_in_path "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}Config.cmake.in")
+  set(config_in_path "${CMAKE_BINARY_DIR}/${__export_namespace}Config.cmake.in")
   file(WRITE "${config_in_path}" "${config_content}")
 
   configure_package_config_file(
     "${config_in_path}"
-    "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}Config.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE}")
+    "${CMAKE_BINARY_DIR}/${__export_namespace}Config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__export_namespace}")
 
-  install(FILES "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}Config.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE}")
+  install(FILES "${CMAKE_BINARY_DIR}/${__export_namespace}Config.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__export_namespace}")
 
   if(PROJECT_VERSION)
     write_basic_package_version_file(
-      "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}ConfigVersion.cmake"
+      "${CMAKE_BINARY_DIR}/${__export_namespace}ConfigVersion.cmake"
       VERSION ${PROJECT_VERSION}
       COMPATIBILITY AnyNewerVersion)
-    install(FILES "${CMAKE_BINARY_DIR}/${__nest_g_NAMESPACE}ConfigVersion.cmake"
-      DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__nest_g_NAMESPACE}")
+    install(FILES "${CMAKE_BINARY_DIR}/${__export_namespace}ConfigVersion.cmake"
+      DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__export_namespace}")
   endif()
 
-  nest_message("Export generated (${__nest_g_NAMESPACE} :: ${__nest_g_EXPORT_TARGETS})")
+  log_status("Export generated (${__export_namespace} :: ${__export_targets})")
   message("")
 endfunction()
 
 
 message("")
 include(${CMAKE_CURRENT_LIST_DIR}/Dependencies.cmake)
-nest_message("All dependencies fetched and configured.\n            Interface target -> Nest_AllDeps")
+log_status("All dependencies fetched and configured.\n            Interface target -> _all_dependencies")
 message("")
 
 

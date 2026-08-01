@@ -1,1 +1,1 @@
-Nest_Exe(test_app)
+make_exe(test_app)

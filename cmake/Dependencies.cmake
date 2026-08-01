@@ -1,9 +1,9 @@
-include("${CMAKE_CURRENT_LIST_DIR}/Nest.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ProjectSetup.cmake")
 
 # ---------------------------------------------------------------------------
 # Printing — fmtlib
 # ---------------------------------------------------------------------------
-Nest_Import(fmt::fmt
+import_dependency(fmt::fmt
   GITHUB fmtlib/fmt
   TAG        11.1.4
   OPTIONS    FMT_INSTALL=OFF FMT_TEST=OFF FMT_DOC=OFF
@@ -12,7 +12,7 @@ Nest_Import(fmt::fmt
 # ---------------------------------------------------------------------------
 # Networking — Asio (standalone)
 # ---------------------------------------------------------------------------
-Nest_Import(asio::asio
+import_dependency(asio::asio
   GITHUB chriskohlhoff/asio
   TAG        asio-1-38-2
   OPTIONS    ASIO_STANDALONE=ON ASIO_NO_DEPRECATED=ON
@@ -21,7 +21,7 @@ Nest_Import(asio::asio
 # ---------------------------------------------------------------------------
 # HTTP Server — cpp-httplib
 # ---------------------------------------------------------------------------
-Nest_Import(httplib::httplib
+import_dependency(httplib::httplib
   GITHUB yhirose/cpp-httplib
   TAG        v0.18.2
 )
@@ -29,7 +29,7 @@ Nest_Import(httplib::httplib
 # ---------------------------------------------------------------------------
 # HTTP Requests — cpr
 # ---------------------------------------------------------------------------
-Nest_Import(cpr::cpr
+import_dependency(cpr::cpr
   GITHUB libcpr/cpr
   TAG        1.11.1
   OPTIONS    CPR_BUILD_TESTS=OFF CPR_BUILD_EXAMPLES=OFF CPR_USE_SYSTEM_CURL=ON
@@ -38,7 +38,7 @@ Nest_Import(cpr::cpr
 # ---------------------------------------------------------------------------
 # JSON — Glaze
 # ---------------------------------------------------------------------------
-Nest_Import(glaze::glaze
+import_dependency(glaze::glaze
   GITHUB stephenberry/glaze
   TAG        v7.9.1
   OPTIONS    glaze_BUILD_TEST=OFF glaze_INSTALL=OFF
@@ -47,7 +47,7 @@ Nest_Import(glaze::glaze
 # ---------------------------------------------------------------------------
 # Unicode — utfcpp
 # ---------------------------------------------------------------------------
-Nest_Import(utfcpp::utfcpp
+import_dependency(utfcpp::utfcpp
   GITHUB nemtrif/utfcpp
   TAG        v4.0.6
 )
@@ -55,7 +55,7 @@ Nest_Import(utfcpp::utfcpp
 # ---------------------------------------------------------------------------
 # CLI Args — argparse
 # ---------------------------------------------------------------------------
-Nest_Import(argparse::argparse
+import_dependency(argparse::argparse
   GITHUB p-ranav/argparse
   TAG        v3.2
 )
@@ -63,7 +63,7 @@ Nest_Import(argparse::argparse
 # ---------------------------------------------------------------------------
 # Maths — GLM
 # ---------------------------------------------------------------------------
-Nest_Import(glm::glm
+import_dependency(glm::glm
   GITHUB g-truc/glm
   TAG        1.0.1
   OPTIONS    GLM_TEST_ENABLE=OFF GLM_INSTALL_ENABLE=OFF
@@ -72,7 +72,7 @@ Nest_Import(glm::glm
 # ---------------------------------------------------------------------------
 # Regex — CTRE
 # ---------------------------------------------------------------------------
-Nest_Import(ctre::ctre
+import_dependency(ctre::ctre
   GITHUB hanickadot/compile-time-regular-expressions
   TAG        v3.10.0
 )
@@ -80,7 +80,7 @@ Nest_Import(ctre::ctre
 # ---------------------------------------------------------------------------
 # tl::expected — C++20 polyfill for std::expected (C++23)
 # ---------------------------------------------------------------------------
-Nest_Import(tl::expected
+import_dependency(tl::expected
   GITHUB TartanLlama/expected
   TAG        v1.1.0
 )
@@ -88,7 +88,7 @@ Nest_Import(tl::expected
 # ---------------------------------------------------------------------------
 # Function2 — fu2::function
 # ---------------------------------------------------------------------------
-Nest_Import(fu2::function
+import_dependency(fu2::function
   GITHUB Naios/function2
   TAG        4.2.2
 )
@@ -96,7 +96,7 @@ Nest_Import(fu2::function
 # ---------------------------------------------------------------------------
 # Better Enums
 # ---------------------------------------------------------------------------
-Nest_Import(enum::enum
+import_dependency(enum::enum
   GITHUB aantron/better-enums
   TAG        0.11.3
 )
@@ -104,7 +104,7 @@ Nest_Import(enum::enum
 # ---------------------------------------------------------------------------
 # Ranges — range-v3
 # ---------------------------------------------------------------------------
-Nest_Import(range-v3::range-v3
+import_dependency(range-v3::range-v3
   GITHUB ericniebler/range-v3
   TAG        0.12.0
   OPTIONS    RANGES_BUILD_CALENDAR_EXAMPLE=OFF RANGES_BUILD_DOCS=OFF RANGE_V3_TESTS=OFF RANGE_V3_EXAMPLES=OFF RANGE_V3_PERF=OFF RANGE_V3_HEADER_CHECKS=OFF
@@ -113,7 +113,7 @@ Nest_Import(range-v3::range-v3
 # ---------------------------------------------------------------------------
 # Hash map/set — unordered_dense (replaces abseil flat_hash_map/flat_hash_set)
 # ---------------------------------------------------------------------------
-Nest_Import(unordered_dense::unordered_dense
+import_dependency(unordered_dense::unordered_dense
   GITHUB martinus/unordered_dense
   TAG        v4.8.1
 )
@@ -121,7 +121,7 @@ Nest_Import(unordered_dense::unordered_dense
 # ---------------------------------------------------------------------------
 # EASTL — east::string / east::vector
 # ---------------------------------------------------------------------------
-Nest_Import(EASTL::EASTL
+import_dependency(EASTL::EASTL
   GITHUB electronicarts/EASTL
   TAG        3.21.23
   OPTIONS    EASTL_BUILD_TESTS=OFF EASTL_BUILD_BENCHMARK=OFF
@@ -133,7 +133,7 @@ Nest_Import(EASTL::EASTL
 #       Uncomment and adapt the following block once SDL2 is available.
 #
 # find_package(SDL2 REQUIRED)
-# Nest_Import(gpu::gpu
+# import_dependency(gpu::gpu
 #   GITHUB grimfang4/sdl-gpu
 #   TAG        master
 #   OPTIONS    SDL_GPU_DISABLE_PNG=ON SDL_GPU_DISABLE_NPOT=ON

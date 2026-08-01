@@ -1,6 +1,6 @@
-option(NEST_WERRORS "Treat compiler warnings as errors" OFF)
+option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
-function(set_project_warnings project_name)
+function(setup_warnings project_name)
   # ------------------------------------------------------------------
   # MSVC — compiler conformance flags (not warnings, but required for
   #        correct C++20 behaviour on MSVC)
@@ -72,7 +72,7 @@ function(set_project_warnings project_name)
     -Wno-strict-aliasing
   )
 
-  if(NEST_WERRORS)
+  if(WARNINGS_AS_ERRORS)
     set(CLANG_WARNINGS ${CLANG_WARNINGS} -Werror)
     set(GCC_WARNINGS ${GCC_WARNINGS} -Werror)
     set(MSVC_WARNINGS ${MSVC_WARNINGS} /WX)

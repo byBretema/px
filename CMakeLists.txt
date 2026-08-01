@@ -4,12 +4,12 @@ set(CMAKE_MESSAGE_LOG_LEVEL "NOTICE")
 project(px  VERSION 0.0.1  DESCRIPTION "Render engine")
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
 
-include(cmake/Nest.cmake)
+include(cmake/ProjectSetup.cmake)
 
 add_subdirectory(projects)
 
-Nest_EnableTests()
+setup_testing()
 add_subdirectory(tests)
 
-Nest_GenerateExport()
+make_export()
 
