@@ -11,5 +11,5 @@ add_subdirectory(projects)
 setup_testing()
 add_subdirectory(tests)
 
-make_export()
+setup_export()
 

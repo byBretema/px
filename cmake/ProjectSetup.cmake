@@ -6,10 +6,12 @@ cmake_policy(SET CMP0135 NEW)
 
 set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 
-set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/build/vendor")
+set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor/_fetched" CACHE PATH
+    "Directory where FetchContent dependencies are stored")
+set(FETCHCONTENT_BASE_DIR "${VENDOR_DIR}")
 set(FETCHCONTENT_QUIET ON)
 
-add_library(_all_dependencies INTERFACE)
+add_library(all_dependencies INTERFACE)
 
 macro(__add_interface_dependency namespace target fetch_id subdir)
   if(NOT TARGET ${namespace}::${target})
@@ -17,7 +19,7 @@ macro(__add_interface_dependency namespace target fetch_id subdir)
     target_include_directories(${namespace}_${target} INTERFACE "${${fetch_id}_SOURCE_DIR}/${subdir}")
     add_library(${namespace}::${target} ALIAS ${namespace}_${target})
   endif()
-  target_link_libraries(_all_dependencies INTERFACE ${namespace}::${target})
+  target_link_libraries(all_dependencies INTERFACE ${namespace}::${target})
 endmacro()
 
 set(PRE_LOG_TAG "" CACHE STRING "Prefix for framework log messages")
@@ -319,7 +321,7 @@ endfunction()
 
 # ---------------------------------------------------------------------------
 # Scaffolding — make_exe / make_lib / make_lib_header_only / link_dependencies /
-#   make_export
+#   setup_export
 # ---------------------------------------------------------------------------
 
 set(__export_namespace "${PROJECT_NAME}" CACHE INTERNAL "Namespace for install targets")
@@ -338,8 +340,8 @@ endfunction()
 macro(make_exe name)
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${name} ${_sources} ${_headers} ${ARGN})
-  if(TARGET _all_dependencies)
-    target_link_libraries(${name} PRIVATE _all_dependencies)
+  if(TARGET all_dependencies)
+    target_link_libraries(${name} PRIVATE all_dependencies)
   endif()
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -354,8 +356,8 @@ endmacro()
 macro(make_lib name type)
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_library(${name} ${type} ${_sources} ${_headers} ${ARGN})
-  if(TARGET _all_dependencies)
-    target_link_libraries(${name} PUBLIC _all_dependencies)
+  if(TARGET all_dependencies)
+    target_link_libraries(${name} PUBLIC all_dependencies)
   endif()
   target_include_directories(${name} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -403,8 +405,8 @@ endmacro()
 macro(make_test name)
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${name} ${_sources} ${_headers} ${ARGN})
-  if(TARGET _all_dependencies)
-    target_link_libraries(${name} PRIVATE _all_dependencies)
+  if(TARGET all_dependencies)
+    target_link_libraries(${name} PRIVATE all_dependencies)
   endif()
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -415,7 +417,7 @@ macro(make_test name)
 endmacro()
 
 
-function(make_export)
+function(setup_export)
   cmake_parse_arguments(ARG "" "NAMESPACE" "DEPS" ${ARGN})
 
   if(ARG_NAMESPACE)
@@ -476,7 +478,7 @@ endfunction()
 
 message("")
 include(${CMAKE_CURRENT_LIST_DIR}/Dependencies.cmake)
-log_status("All dependencies fetched and configured.\n            Interface target -> _all_dependencies")
+log_status("All dependencies fetched and configured.\n            Interface target -> all_dependencies")
 message("")
 
 
