@@ -1,3 +1,5 @@
+# Warning management helpers
+
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 function(setup_warnings project_name)

@@ -1,5 +1,6 @@
+# Project(s) defaults
+
 include(GNUInstallDirs)
-include_guard(DIRECTORY)
 
 # C++ Standard
 set(CMAKE_CXX_STANDARD 23)
@@ -19,7 +20,9 @@ set(ENV{NINJA_STATUS} "[%p] ")
 # ---------------------------------------------------------------------------
 # ccache — build cache
 # ---------------------------------------------------------------------------
+
 option(USE_CCACHE "Enable ccache build caching" ON)
+
 if(USE_CCACHE)
   find_program(__ccache_found ccache)
   if(__ccache_found)
@@ -36,7 +39,9 @@ endif()
 # ---------------------------------------------------------------------------
 # mold — modern linker (Linux only)
 # ---------------------------------------------------------------------------
+
 option(USE_MOLD "Use mold linker" ON)
+
 if(USE_MOLD AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
   find_program(__mold_found mold)
   if(__mold_found)

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.28)
 
-set(CMAKE_MESSAGE_LOG_LEVEL "NOTICE")
-project(px  VERSION 0.0.1  DESCRIPTION "Render engine")
-set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
+include(cmake/y.cmake)
 
-include(cmake/ProjectSetup.cmake)
+pre_project()
+project(px  VERSION 0.0.1  DESCRIPTION "Render engine")
+post_project()
 
 add_subdirectory(projects)
 

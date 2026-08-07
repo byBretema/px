@@ -1,3 +1,5 @@
+# Sanitizers helpers
+
 option(ENABLE_ASAN "Enable address sanitizer" OFF)
 option(ENABLE_UBSAN "Enable undefined behaviour sanitizer" OFF)
 
