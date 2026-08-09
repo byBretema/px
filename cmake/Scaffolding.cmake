@@ -92,6 +92,7 @@ endmacro()
 
 macro(setup_testing)
   if(PROJECT_IS_TOP_LEVEL)
+    log_header("Testing enabled")
     enable_testing()
   endif()
 endmacro()
@@ -99,6 +100,7 @@ endmacro()
 
 function(setup_export)
   cmake_parse_arguments(ARG "" "NAMESPACE" "DEPS" ${ARGN})
+  log_header("Export")
 
   if(ARG_NAMESPACE)
     set(__export_namespace "${ARG_NAMESPACE}" CACHE INTERNAL "")
@@ -152,5 +154,4 @@ function(setup_export)
   endif()
 
   log_status("Export generated (${__export_namespace} :: ${__export_targets})")
-  log_ln()
 endfunction()

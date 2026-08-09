@@ -3,7 +3,6 @@
 include_guard(DIRECTORY)
 
 include(${CMAKE_CURRENT_LIST_DIR}/Importer.cmake)
-log_ln()
 
 # ---------------------------------------------------------------------------
 # Printing — fmtlib
@@ -159,7 +158,8 @@ import_dependency(EASTL::EASTL
 # )
 # ---------------------------------------------------------------------------
 
+log_sep()
 log_status("All dependencies fetched and configured.")
 log_status("Interface target: 'all_dependencies'")
-log_ln()
+
 
