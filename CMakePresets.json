@@ -4,6 +4,7 @@
     {
       "hidden": true,
       "name": "base",
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build"
     },
     {

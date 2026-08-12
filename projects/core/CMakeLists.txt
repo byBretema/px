@@ -1,0 +1,1 @@
+make_hlib(core)

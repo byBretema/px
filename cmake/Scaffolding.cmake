@@ -53,10 +53,6 @@ endmacro()
 
 macro(make_lib_header_only name)
   add_library(${name} INTERFACE)
-  __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
-  if(_headers)
-    target_sources(${name} INTERFACE ${_headers})
-  endif()
   target_include_directories(${name} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/${__export_namespace}>)

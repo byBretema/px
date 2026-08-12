@@ -94,6 +94,7 @@ import_dependency(ctre::ctre
 import_dependency(tl::expected
   GITHUB    TartanLlama/expected
   TAG       v1.1.0
+  OPTIONS   EXPECTED_BUILD_TESTS=OFF
 )
 
 # ---------------------------------------------------------------------------
