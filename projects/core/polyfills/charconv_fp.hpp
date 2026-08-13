@@ -10,43 +10,25 @@
 
 #pragma once
 
-#include <string_view>
 #include <type_traits>
 
 // ----------------------------------------------------------------------------
-// DETECTION
-//
-// Sets Y_POLYFILL_CHARCONV_FP to 1 when the FP overloads may be absent.
-// Define Y_FORCE_POLYFILL_CHARCONV_FP to force the fallback path (e.g. for
-// testing), and Y_POLYFILL_CHARCONV_FP defaults to 0 on modern toolchains.
+// DETECTION: Y_POLYFILL_CHARCONV_FP
+// Defaults to 0 on modern toolchains, to 1 when FP overloads not supported.
+// Define Y_FORCE_POLYFILL_CHARCONV_FP sets it to 1. (e.g. for testing)
 // ----------------------------------------------------------------------------
 
 #if defined(Y_FORCE_POLYFILL_CHARCONV_FP)
   #define Y_POLYFILL_CHARCONV_FP 1
-#elif defined(_MSC_VER)
-  #if _MSC_VER < 1924
+#elif defined(_MSC_VER) && _MSC_VER >= 1924
+  // MSVC VS2019 16.4+ ships FP to_chars
+#elif defined(__clang__) && defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 14000
+  // libc++ 14+ ships FP to_chars
+#elif defined(__GNUC__) && defined(__GLIBCXX__) && __GNUC__ >= 11
+  // GCC 11+ with libstdc++ ships FP to_chars; note: libstdc++ omits
+  // __cpp_lib_to_chars here, so detection must be version-based, not macro-based
+#else
   #define Y_POLYFILL_CHARCONV_FP 1
-  #endif
-#elif defined(__clang__)
-  #if defined(_LIBCPP_VERSION)
-    #if _LIBCPP_VERSION < 14000
-    #define Y_POLYFILL_CHARCONV_FP 1
-    #endif
-  #elif defined(__GLIBCXX__) && defined(__GNUC__) && __GNUC__ < 11
-    #define Y_POLYFILL_CHARCONV_FP 1
-  #else
-    #define Y_POLYFILL_CHARCONV_FP 1
-  #endif
-#elif defined(__GNUC__)
-  #if defined(__GLIBCXX__)
-    #if __GNUC__ < 11
-      #define Y_POLYFILL_CHARCONV_FP 1
-      #endif
-    #else
-      #define Y_POLYFILL_CHARCONV_FP 1
-    #endif
-  #else
-    #define Y_POLYFILL_CHARCONV_FP 1
 #endif
 
 #ifndef Y_POLYFILL_CHARCONV_FP
@@ -54,34 +36,30 @@
 #endif
 
 // ----------------------------------------------------------------------------
-// IMPLEMENTATION
-//
-// Only defined when the fallback is active, so its dependencies (<cstdio>)
-// are pulled in exactly on the toolchains that need them. It appends a
-// floating-point value to a generic buffer using std::snprintf with the
-// default %g precision (6 significant digits), matching how most values are
-// displayed while keeping the output short.
+// IMPLEMENTATION:
+// Only defined when the polyfill is active. It appends a floating-point value
+// to a generic buffer using std::snprintf with the default %g precision.
 // ----------------------------------------------------------------------------
 
 #if Y_POLYFILL_CHARCONV_FP
 
-#include <cstdio> // snprintf fallback for FP to_chars
+#pragma message("-- Using polyfill to support charconv on fp numbers")
+
+#include <cstdio> // <- snprintf
 
 namespace y::detail {
 
-template <typename Buf, typename T>
-inline void append_fp_fallback(Buf &buf, T val) {
-  char temp[64];
+template <typename T>
+inline std::size_t append_fp_fallback(char *buf, std::size_t bufSize, T val) {
   int n;
   if constexpr (std::is_same_v<T, long double>) {
-    n = std::snprintf(temp, sizeof(temp), "%Lg", val);
+    n = std::snprintf(buf, bufSize, "%Lg", val);
   } else {
-    n = std::snprintf(temp, sizeof(temp), "%g", static_cast<double>(val));
+    n = std::snprintf(buf, bufSize, "%g", static_cast<double>(val));
   }
-  if (n > 0) {
-    buf.append(std::string_view(
-        temp, static_cast<std::string_view::size_type>(n)));
-  }
+  return (n > 0 && static_cast<std::size_t>(n) < bufSize)
+             ? static_cast<std::size_t>(n)
+             : 0;
 }
 
 } // namespace y::detail

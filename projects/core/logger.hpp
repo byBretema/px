@@ -96,15 +96,18 @@ template <typename T>
   requires std::is_arithmetic_v<T> && (!std::is_same_v<T, bool>) &&
            (!std::is_same_v<std::remove_cv_t<T>, char>)
 inline void append_value(Buffer &buf, T val) {
+  char temp[64];
+  std::size_t len = 0;
   if constexpr (std::is_floating_point_v<T> && Y_POLYFILL_CHARCONV_FP) {
-    append_fp_fallback(buf, val);
+    len = append_fp_fallback(temp, sizeof(temp), val);
   } else {
-    char temp[64];
     auto [ptr, ec] = std::to_chars(temp, temp + sizeof(temp), val);
     if (ec == std::errc{}) {
-      buf.append(std::string_view(
-          temp, static_cast<std::string_view::size_type>(ptr - temp)));
+      len = static_cast<std::size_t>(ptr - temp);
     }
+  }
+  if (len > 0) {
+    buf.append(std::string_view(temp, len));
   }
 }
 
