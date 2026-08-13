@@ -3,19 +3,19 @@
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 function(setup_warnings project_name)
-  # ------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # MSVC — compiler conformance flags (not warnings, but required for
   #        correct C++20 behaviour on MSVC)
-  # ------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   set(MSVC_OPTIONS
     /Zc:preprocessor            # conforming preprocessor (two-phase name lookup)
     /utf-8                      # source + execution character set = UTF-8
   )
 
-  # ------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # MSVC — warning flags (each /wNNNN enables a warning that is
   #        off-by-default at /W4; /weNNNN makes it an error).
-  # ------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   set(MSVC_WARNINGS
     /W4                         # warning level 4 (reasonable maximum)
     /permissive-                # strict standards conformance

@@ -21,7 +21,7 @@ macro(__add_interface_dependency namespace target fetch_id subdir)
   target_link_libraries(all_dependencies INTERFACE ${namespace}::${target})
 endmacro()
 
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # __detect_include_subdir — auto-detect the include subdirectory for a
 #   FetchContent dependency after it has been populated.
 #
@@ -39,7 +39,7 @@ endmacro()
 #       subdirectories with .h/.hpp
 #   3.  A top-level dir contains     →  "dir/include" if it has an include/
 #       headers                          subdirectory, else "."
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 function(__detect_include_subdir fetch_id out_var)
   set(src_dir "${${fetch_id}_SOURCE_DIR}")
 
@@ -105,7 +105,7 @@ function(__detect_include_subdir fetch_id out_var)
   set(${out_var} "." PARENT_SCOPE)
 endfunction()
 
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # import_dependency — one-shot FetchContent declaration, population, and target creation for a header-only library.
 #
 #   qualified_target   CMake target name in the form "namespace::target".
@@ -125,7 +125,7 @@ endfunction()
 # Exactly one of REPOSITORY / GITHUB / GITLAB / BITBUCKET must be given.
 # Multiple calls sharing the same URL are safe — the fetch happens only
 # once and the include directory is shared.
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 function(import_dependency qualified_target)
   cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH" "OPTIONS" ${ARGN})
 

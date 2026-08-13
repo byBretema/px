@@ -1,11 +1,15 @@
 # Project(s) defaults
 
+# Includes
 include(GNUInstallDirs)
 
 # C++ Standard
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Set modules flags: -fmodules-ts -fmodule-mapper -fdeps-format
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 # Build metadata
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -17,9 +21,9 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 # Ninja status format
 set(ENV{NINJA_STATUS} "[%p] ")
 
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # ccache — build cache
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
 option(USE_CCACHE "Enable ccache build caching" ON)
 
@@ -36,9 +40,9 @@ if(USE_CCACHE)
   endif()
 endif()
 
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # mold — modern linker (Linux only)
-# ---------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
 option(USE_MOLD "Use mold linker" ON)
 
