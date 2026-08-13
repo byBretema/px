@@ -1,9 +1,9 @@
 #pragma once
 
 #include <charconv>
+#include <cstdio>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -160,7 +160,7 @@ inline void print(std::string_view prefix, std::string_view m,
   y::detail::fmt::to_buffer(buf, m, args...);
   buf.append("\n");
   std::string_view out = buf.view();
-  std::cout.write(out.data(), static_cast<std::streamsize>(out.size()));
+  std::fwrite(out.data(), 1, out.size(), stdout);
 }
 
 } // namespace y::detail
