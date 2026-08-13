@@ -41,7 +41,7 @@ function(setup_warnings project_name)
     /w14928  # C4928 — illegal copy-initialisation; more than one implicit conversion
   )
 
-  set(CLANG_WARNINGS
+  set(COMMON_WARNINGS
     -Wall
     -Wextra
     -Wpedantic
@@ -58,14 +58,18 @@ function(setup_warnings project_name)
     -Wundef
     -Wdouble-promotion
     -Wimplicit-fallthrough
+    -Wno-float-equal
+  )
+
+  set(CLANG_WARNINGS
+    ${COMMON_WARNINGS}
     -Wno-c++98-compat
     -Wno-c++98-compat-pedantic
-    -Wno-float-equal
     -Wno-language-extension-token
   )
 
   set(GCC_WARNINGS
-    ${CLANG_WARNINGS}
+    ${COMMON_WARNINGS}
     -Wmisleading-indentation
     -Wduplicated-cond
     -Wduplicated-branches

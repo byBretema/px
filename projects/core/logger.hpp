@@ -18,35 +18,38 @@ namespace fmt {
 // --- Buffer logic ---
 
 struct Buffer {
-  char *stack_ptr_;
-  size_t capacity_;
-  size_t size_ = 0;
-  std::string heap_buf_;
-
-  Buffer(char *ptr, size_t cap) noexcept : stack_ptr_(ptr), capacity_(cap) {}
+  Buffer(char *ptr, size_t cap) noexcept : m_stack_ptr(ptr), m_capacity(cap) {}
 
   void append(std::string_view sv) {
-    if (heap_buf_.empty()) {
-      if (size_ + sv.size() <= capacity_) {
-        std::memcpy(stack_ptr_ + size_, sv.data(), sv.size());
-        size_ += sv.size();
+    if (m_heap_buf.empty()) {
+      if (m_size + sv.size() <= m_capacity) {
+        std::memcpy(m_stack_ptr + m_size, sv.data(), sv.size());
+        m_size += sv.size();
         return;
       }
-      heap_buf_.reserve(size_ + sv.size() + 2048);
-      heap_buf_.assign(stack_ptr_, size_);
+      m_heap_buf.reserve(m_size + sv.size() + 2048);
+      m_heap_buf.assign(m_stack_ptr, m_size);
     }
-    heap_buf_.append(sv);
+    m_heap_buf.append(sv);
   }
 
   [[nodiscard]] std::string_view view() const noexcept {
-    return heap_buf_.empty() ? std::string_view(stack_ptr_, size_)
-                             : std::string_view(heap_buf_);
+    return m_heap_buf.empty() ? std::string_view(m_stack_ptr, m_size)
+                              : std::string_view(m_heap_buf);
   }
+
+private:
+  char *m_stack_ptr;
+  size_t m_capacity;
+  size_t m_size = 0;
+  std::string m_heap_buf;
 };
 
 template <size_t Cap = 1024> struct DynamicBuffer : public Buffer {
-  char storage_[Cap];
-  DynamicBuffer() noexcept : Buffer(storage_, Cap) {}
+  DynamicBuffer() noexcept : Buffer(m_storage, Cap) {}
+
+private:
+  char m_storage[Cap];
 };
 
 // --- Placeholder logic ---
@@ -173,8 +176,7 @@ template <typename... Targs>
 inline std::string format(std::string_view str, const Targs &...args) {
   y::detail::fmt::DynamicBuffer<1024> buffer;
   y::detail::fmt::to_buffer(buffer, str, args...);
-  // Explicitly construct std::string to avoid dangling string_view UB
-  std::string_view v = buffer.view();
+  std::string_view v = buffer.view(); // Avoids dangling string_view UB
   return std::string(v.data(), v.size());
 }
 
