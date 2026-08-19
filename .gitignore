@@ -3,7 +3,6 @@
 
 build/
 compile_commands.json
-vendor/_fetched/
 
 
 # --- C / C++ Compiled Artifacts & Tooling -------------------------------------

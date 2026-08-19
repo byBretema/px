@@ -4,7 +4,8 @@ set shell := ["bash", "-c"]
 
 root := justfile_directory()
 
-build_dir := root / "build"
+build_root := root / "build"
+build_dir := build_root / "build"
 
 _projects := `for d in projects/*/; do if [ -f "$d/CMakeLists.txt" ]; then basename "$d"; fi; done`
 _tests := `for d in tests/*/; do if [ -f "$d/CMakeLists.txt" ]; then basename "$d"; fi; done`
@@ -19,18 +20,25 @@ generator := "Ninja"
 # --- Private ---
 
 [private]
-default:
+list target="base":
+    @just _list_{{ target }}
     @echo
+    @just -l -u
+
+[private]
+_list_base:
     @echo "Available projects:"
     @echo "{{ _projects }}" | while read -r p; do [ -n "$p" ] && echo "    $p"; done
     @echo
     @echo "Available tests:"
     @echo "{{ _tests }}" | while read -r p; do [ -n "$p" ] && echo "    $p"; done
+
+[private]
+_list_all:
+    @just _list_base
     @echo
     @echo "Available presets:"
     @cd "{{ root }}" && cmake --list-presets 2>/dev/null | awk -F'"' '/^[[:space:]]+"/ {print $2}' | while read -r p; do [ -n "$p" ] && echo "    $p"; done
-    @echo
-    @just -l -u
 
 [private]
 config:
@@ -94,15 +102,17 @@ test *tests:
 # --- Cleanup ---
 
 # target = all / projects  (wipe 'all' or 'projects only')
-clean target="all":
+clean target="projects":
     @just _clean_{{ target }}
 
 [private]
 _clean_projects:
     @rm -rf "{{ build_dir }}"
     @rm -rf "{{ root }}/.cache"
+    @rm -f "{{ root }}/compile_commands.json"
 
 [private]
 _clean_all:
+    @v="$(sed -n 's/^VENDOR_DIR:PATH=//p' "{{ build_dir }}/CMakeCache.txt" 2>/dev/null | head -1)" || true; \
+    [ -n "$v" ] && rm -rf "$v" || true
     @just _clean_projects
-    @rm -f "{{ root }}/compile_commands.json"

@@ -5,7 +5,7 @@ include(FetchContent)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 
-set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor/_fetched" CACHE PATH
+set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/build/vendor" CACHE PATH
     "Directory where FetchContent dependencies are stored")
 set(FETCHCONTENT_BASE_DIR "${VENDOR_DIR}")
 set(FETCHCONTENT_QUIET ON)

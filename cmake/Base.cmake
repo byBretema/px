@@ -22,7 +22,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(ENV{NINJA_STATUS} "[%p] ")
 
 #-------------------------------------------------------------------------------
-# ccache — build cache
+# Cache: ccache, for build cache
 #-------------------------------------------------------------------------------
 
 option(USE_CCACHE "Enable ccache build caching" ON)
@@ -41,7 +41,7 @@ if(USE_CCACHE)
 endif()
 
 #-------------------------------------------------------------------------------
-# mold — modern linker (Linux only)
+# Linker: mold, replacement for ld/gold/lld (Linux only)
 #-------------------------------------------------------------------------------
 
 option(USE_MOLD "Use mold linker" ON)
@@ -57,3 +57,48 @@ if(USE_MOLD AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     log_status("mold: not found")
   endif()
 endif()
+
+#-------------------------------------------------------------------------------
+# Compile Commands
+#-------------------------------------------------------------------------------
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(NOT WIN32)
+  if(EXISTS "${CMAKE_SOURCE_DIR}/compile_commands.json" AND NOT IS_SYMLINK "${CMAKE_SOURCE_DIR}/compile_commands.json")
+    log_warning("compile_commands.json exists and is not a symlink — leaving it alone")
+  else()
+    file(REMOVE "${CMAKE_SOURCE_DIR}/compile_commands.json")
+    file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json"
+                     "${CMAKE_SOURCE_DIR}/compile_commands.json"
+                     SYMBOLIC)
+  endif()
+else()
+  file(COPY_FILE "${CMAKE_BINARY_DIR}/compile_commands.json"
+                 "${CMAKE_SOURCE_DIR}/compile_commands.json"
+                 ONLY_IF_DIFFERENT)
+endif()
+
+
+#-------------------------------------------------------------------------------
+# Sanitizers
+#-------------------------------------------------------------------------------
+
+option(ENABLE_ASAN "Enable address sanitizer" OFF)
+option(ENABLE_UBSAN "Enable undefined behaviour sanitizer" OFF)
+
+function(setup_sanitizers project_name)
+  set(san_flags "")
+  if(ENABLE_ASAN)
+    list(APPEND san_flags -fsanitize=address)
+  endif()
+  if(ENABLE_UBSAN)
+    list(APPEND san_flags -fsanitize=undefined)
+  endif()
+  if(san_flags)
+    string(REPLACE ";" "," san_flags "${san_flags}")
+    target_compile_options(${project_name} PRIVATE -fsanitize=${san_flags})
+    target_link_options(${project_name} PRIVATE -fsanitize=${san_flags})
+  endif()
+endfunction()
+

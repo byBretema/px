@@ -5,7 +5,7 @@
       "hidden": true,
       "name": "base",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build"
+      "binaryDir": "${sourceDir}/build/build"
     },
     {
       "hidden": true,
