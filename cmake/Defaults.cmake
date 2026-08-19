@@ -1,31 +1,47 @@
-# Project(s) defaults
+# Project defaults
 
-# Includes
-include(GNUInstallDirs)
+#-------------------------------------------------------------------------------
+# Options
+#-------------------------------------------------------------------------------
+
+option(USE_CCACHE           "Enable ccache build caching"          ON )
+option(USE_MOLD             "Use mold linker"                      ON )
+option(USE_COMPILE_COMMANDS "Use CompileCommands.json"             ON )
+option(ENABLE_ASAN          "Enable address sanitizer"             OFF)
+option(ENABLE_UBSAN         "Enable undefined behaviour sanitizer" OFF)
+option(CPP_STANDARND        "Cpp Standard"                         20 )
+
+
+#-------------------------------------------------------------------------------
+# Environment
+#-------------------------------------------------------------------------------
+
+set(ENV{NINJA_STATUS} "[%p] ")  # Ninja status format
+
+
+#-------------------------------------------------------------------------------
+# Sane defaults
+#-------------------------------------------------------------------------------
 
 # C++ Standard
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD ${CPP_STANDARD})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Set modules flags: -fmodules-ts -fmodule-mapper -fdeps-format
-set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-
-# Build metadata
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Symbol visibility (smaller/faster binaries)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-# Ninja status format
-set(ENV{NINJA_STATUS} "[%p] ")
+# Set modules flags: -fmodules-ts -fmodule-mapper -fdeps-format
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
+# Includes
+include(GNUInstallDirs)
+
 
 #-------------------------------------------------------------------------------
 # Cache: ccache, for build cache
 #-------------------------------------------------------------------------------
-
-option(USE_CCACHE "Enable ccache build caching" ON)
 
 if(USE_CCACHE)
   find_program(__ccache_found ccache)
@@ -40,11 +56,10 @@ if(USE_CCACHE)
   endif()
 endif()
 
+
 #-------------------------------------------------------------------------------
 # Linker: mold, replacement for ld/gold/lld (Linux only)
 #-------------------------------------------------------------------------------
-
-option(USE_MOLD "Use mold linker" ON)
 
 if(USE_MOLD AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
   find_program(__mold_found mold)
@@ -58,34 +73,34 @@ if(USE_MOLD AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
   endif()
 endif()
 
+
 #-------------------------------------------------------------------------------
 # Compile Commands
 #-------------------------------------------------------------------------------
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(USE_COMPILE_COMMANDS)
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(NOT WIN32)
-  if(EXISTS "${CMAKE_SOURCE_DIR}/compile_commands.json" AND NOT IS_SYMLINK "${CMAKE_SOURCE_DIR}/compile_commands.json")
-    log_warning("compile_commands.json exists and is not a symlink — leaving it alone")
+  if(NOT WIN32)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/compile_commands.json" AND NOT IS_SYMLINK "${CMAKE_SOURCE_DIR}/compile_commands.json")
+      log_warning("compile_commands.json exists and is not a symlink — leaving it alone")
+    else()
+      file(REMOVE "${CMAKE_SOURCE_DIR}/compile_commands.json")
+      file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json"
+                       "${CMAKE_SOURCE_DIR}/compile_commands.json"
+                       SYMBOLIC)
+    endif()
   else()
-    file(REMOVE "${CMAKE_SOURCE_DIR}/compile_commands.json")
-    file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json"
-                     "${CMAKE_SOURCE_DIR}/compile_commands.json"
-                     SYMBOLIC)
+    file(COPY_FILE "${CMAKE_BINARY_DIR}/compile_commands.json"
+                   "${CMAKE_SOURCE_DIR}/compile_commands.json"
+                   ONLY_IF_DIFFERENT)
   endif()
-else()
-  file(COPY_FILE "${CMAKE_BINARY_DIR}/compile_commands.json"
-                 "${CMAKE_SOURCE_DIR}/compile_commands.json"
-                 ONLY_IF_DIFFERENT)
 endif()
 
 
 #-------------------------------------------------------------------------------
 # Sanitizers
 #-------------------------------------------------------------------------------
-
-option(ENABLE_ASAN "Enable address sanitizer" OFF)
-option(ENABLE_UBSAN "Enable undefined behaviour sanitizer" OFF)
 
 function(setup_sanitizers project_name)
   set(san_flags "")

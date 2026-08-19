@@ -1,7 +1,7 @@
 # EntryPoint
 
 include_guard(DIRECTORY)
-include(${CMAKE_CURRENT_LIST_DIR}/Logger.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/helpers/Logger.cmake)
 
 set(_cmake_helpers_dir ${CMAKE_CURRENT_LIST_DIR})
 
