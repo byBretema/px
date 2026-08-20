@@ -26,12 +26,8 @@ macro(post_project)
   include(${_cmake_helpers_dir}/Dependencies.cmake)
 
   log_header("Setup")
-  include(${_cmake_helpers_dir}/Defaults.cmake)
-  include(${_cmake_helpers_dir}/Warnings.cmake)
-  include(${_cmake_helpers_dir}/Sanitizers.cmake)
-  include(${_cmake_helpers_dir}/CompileCommands.cmake)
-
-  include(${_cmake_helpers_dir}/Scaffolding.cmake)
+  include(${_cmake_helpers_dir}/Base.cmake)
+  include(${_cmake_helpers_dir}/helpers/Scaffolding.cmake)
 
   unset(_cmake_helpers_dir)
 endmacro()
