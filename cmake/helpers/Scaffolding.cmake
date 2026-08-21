@@ -8,56 +8,76 @@ set(__export_targets "" CACHE INTERNAL "Targets registered for export")
 
 
 function(__glob_sources root_dir out_sources out_headers)
+
   file(GLOB _sources CONFIGURE_DEPENDS
     "${root_dir}/*.cpp" "${root_dir}/*.cc" "${root_dir}/*.c" "${root_dir}/*.cxx")
+  set(${out_sources} ${_sources} PARENT_SCOPE)
+
   file(GLOB _headers CONFIGURE_DEPENDS
     "${root_dir}/*.hpp" "${root_dir}/*.hh" "${root_dir}/*.h" "${root_dir}/*.hxx")
-  set(${out_sources} ${_sources} PARENT_SCOPE)
   set(${out_headers} ${_headers} PARENT_SCOPE)
+
 endfunction()
 
 
 macro(make_exe name)
+
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${name} ${_sources} ${_headers} ${ARGN})
+
   if(TARGET all_dependencies)
     target_link_libraries(${name} PRIVATE all_dependencies)
   endif()
+
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+
   setup_warnings(${name})
   setup_sanitizers(${name})
+
   list(APPEND __export_targets ${name})
   set(__export_targets "${__export_targets}" CACHE INTERNAL "")
+
 endmacro()
 
 
 macro(make_lib name type)
+
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_library(${name} ${type} ${_sources} ${_headers} ${ARGN})
+
   if(TARGET all_dependencies)
     target_link_libraries(${name} PUBLIC all_dependencies)
   endif()
+
   target_include_directories(${name} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/${__export_namespace}>)
+
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+
   setup_warnings(${name})
   setup_sanitizers(${name})
+
   list(APPEND __export_targets ${name})
   set(__export_targets "${__export_targets}" CACHE INTERNAL "")
+
 endmacro()
 
 
 macro(make_lib_header_only name)
+
   add_library(${name} INTERFACE)
+
   target_include_directories(${name} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/${__export_namespace}>)
+
   list(APPEND __export_targets ${name})
   set(__export_targets "${__export_targets}" CACHE INTERNAL "")
+
 endmacro()
 
 
@@ -67,23 +87,24 @@ endmacro()
 
 
 macro(make_test name)
+
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${name} ${_sources} ${_headers} ${ARGN})
+
   if(TARGET all_dependencies)
     target_link_libraries(${name} PRIVATE all_dependencies)
   endif()
+
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+
   setup_warnings(${name})
   setup_sanitizers(${name})
+
   add_test(NAME ${name} COMMAND ${name})
+
 endmacro()
-
-
-# macro(link_dependencies target)
-#   target_link_libraries(${target} PRIVATE ${ARGN})
-# endmacro()
 
 
 macro(setup_testing)
@@ -95,6 +116,7 @@ endmacro()
 
 
 function(setup_export)
+
   cmake_parse_arguments(ARG "" "NAMESPACE" "DEPS" ${ARGN})
   log_header("Export")
 
@@ -150,4 +172,5 @@ function(setup_export)
   endif()
 
   log_status("Export generated (${__export_namespace} :: ${__export_targets})")
+
 endfunction()

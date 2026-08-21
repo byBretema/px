@@ -3,9 +3,7 @@
   "configurePresets": [
     {
       "hidden": true,
-      "name": "base",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/build"
+      "name": "base"
     },
     {
       "hidden": true,
@@ -38,21 +36,39 @@
       "inherits": ["asan", "ubsan"]
     },
 
-    { "name": "debug",                    "inherits": ["base", "dbg"] },
-    { "name": "debug-strict",             "inherits": ["base", "dbg", "werror"] },
-    { "name": "debug-asan",               "inherits": ["base", "dbg", "asan"] },
-    { "name": "debug-ubsan",              "inherits": ["base", "dbg", "ubsan"] },
-    { "name": "debug-sanitizers",         "inherits": ["base", "dbg", "san"] },
-    { "name": "debug-asan-strict",        "inherits": ["base", "dbg", "asan", "werror"] },
-    { "name": "debug-ubsan-strict",       "inherits": ["base", "dbg", "ubsan", "werror"] },
-    { "name": "debug-sanitizers-strict",  "inherits": ["base", "dbg", "san", "werror"] },
-    { "name": "release",                  "inherits": ["base", "rel"] },
-    { "name": "release-strict",           "inherits": ["base", "rel", "werror"] },
-    { "name": "release-asan",             "inherits": ["base", "rel", "asan"] },
-    { "name": "release-ubsan",            "inherits": ["base", "rel", "ubsan"] },
-    { "name": "release-sanitizers",       "inherits": ["base", "rel", "san"] },
-    { "name": "release-asan-strict",      "inherits": ["base", "rel", "asan", "werror"] },
-    { "name": "release-ubsan-strict",     "inherits": ["base", "rel", "ubsan", "werror"] },
-    { "name": "release-sanitizers-strict","inherits": ["base", "rel", "san", "werror"] }
+    { "name": "debug", "inherits": ["base", "dbg"] },
+    { "name": "debug-strict", "inherits": ["base", "dbg", "werror"] },
+    { "name": "debug-asan", "inherits": ["base", "dbg", "asan"] },
+    { "name": "debug-ubsan", "inherits": ["base", "dbg", "ubsan"] },
+    { "name": "debug-sanitizers", "inherits": ["base", "dbg", "san"] },
+    {
+      "name": "debug-asan-strict",
+      "inherits": ["base", "dbg", "asan", "werror"]
+    },
+    {
+      "name": "debug-ubsan-strict",
+      "inherits": ["base", "dbg", "ubsan", "werror"]
+    },
+    {
+      "name": "debug-sanitizers-strict",
+      "inherits": ["base", "dbg", "san", "werror"]
+    },
+    { "name": "release", "inherits": ["base", "rel"] },
+    { "name": "release-strict", "inherits": ["base", "rel", "werror"] },
+    { "name": "release-asan", "inherits": ["base", "rel", "asan"] },
+    { "name": "release-ubsan", "inherits": ["base", "rel", "ubsan"] },
+    { "name": "release-sanitizers", "inherits": ["base", "rel", "san"] },
+    {
+      "name": "release-asan-strict",
+      "inherits": ["base", "rel", "asan", "werror"]
+    },
+    {
+      "name": "release-ubsan-strict",
+      "inherits": ["base", "rel", "ubsan", "werror"]
+    },
+    {
+      "name": "release-sanitizers-strict",
+      "inherits": ["base", "rel", "san", "werror"]
+    }
   ]
 }

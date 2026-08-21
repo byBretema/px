@@ -3,14 +3,17 @@
 include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/helpers/Logger.cmake)
 
-set(_cmake_helpers_dir ${CMAKE_CURRENT_LIST_DIR})
+set(__cmake_helpers_dir ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
+
 
 macro(pre_project)
   log_level_to_notice()
   set(_pre_project_invoked)
 endmacro()
 
+
 macro(post_project)
+
   log_level_restore()
 
   if(DEFINED _pre_project_invoked)
@@ -23,12 +26,13 @@ macro(post_project)
   log_status("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})")
 
   log_header("Fulfilling dependencies")
-  include(${_cmake_helpers_dir}/Dependencies.cmake)
+  include(${__cmake_helpers_dir}/Dependencies.cmake)
 
   log_header("Setup")
-  include(${_cmake_helpers_dir}/Base.cmake)
-  include(${_cmake_helpers_dir}/helpers/Scaffolding.cmake)
+  include(${__cmake_helpers_dir}/Base.cmake)
+  include(${__cmake_helpers_dir}/helpers/Scaffolding.cmake)
 
-  unset(_cmake_helpers_dir)
+  unset(__cmake_helpers_dir)
+
 endmacro()
 

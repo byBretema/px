@@ -4,8 +4,6 @@
 # Options
 #-------------------------------------------------------------------------------
 
-option(CPP_STANDARD         "Cpp Standard"                         20 )
-
 option(USE_CCACHE           "Enable ccache build caching"          ON )
 option(USE_MOLD             "Use mold linker"                      ON )
 option(USE_COMPILE_COMMANDS "Use CompileCommands.json"             ON )
@@ -19,17 +17,17 @@ option(WARNINGS_AS_ERRORS   "Treat compiler warnings as errors"    OFF)
 # UI
 #-------------------------------------------------------------------------------
 
-set_property(CACHE CPP_STANDARD PROPERTY STRINGS 17 20 23 26)
-set_property(CACHE CMAKE_CXX_STANDARD PROPERTY STRINGS 17 20 23 26)
-
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
 
 #-------------------------------------------------------------------------------
 # Environment
 #-------------------------------------------------------------------------------
 
-set(ENV{NINJA_STATUS} "[%p] ")  # Ninja status format
+# Ninja status format
+set(ENV{NINJA_STATUS} "[%p] ")
 
+# Ccache directory
+set(ENV{CCACHE_DIR} "${CMAKE_SOURCE_DIR}/.cache/ccache")
 
 #-------------------------------------------------------------------------------
 # Sane defaults
@@ -42,7 +40,7 @@ endif()
 
 # C++ standard
 if(NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${CPP_STANDARD})
+  set(CMAKE_CXX_STANDARD 20)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -78,15 +76,14 @@ include(GNUInstallDirs)
 
 
 #-------------------------------------------------------------------------------
-# Cache: ccache, for build cache
+# Cache: ccache, for building codebase cache
 #-------------------------------------------------------------------------------
 
 if(USE_CCACHE)
   find_program(__ccache_found ccache)
   if(__ccache_found)
     log_status("ccache: enabled (${__ccache_found})")
-    file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/.cache/ccache")
-    set(ENV{CCACHE_DIR} "${CMAKE_SOURCE_DIR}/.cache/ccache")
+    file(MAKE_DIRECTORY "$ENV{CCACHE_DIR}")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${__ccache_found}")
     set(CMAKE_C_COMPILER_LAUNCHER "${__ccache_found}")
   else()
@@ -121,7 +118,6 @@ if(USE_COMPILE_COMMANDS AND NOT DEFINED CMAKE_EXPORT_COMPILE_COMMANDS)
 endif()
 
 if(CMAKE_EXPORT_COMPILE_COMMANDS)
-
   if(NOT WIN32)
     if(EXISTS "${CMAKE_SOURCE_DIR}/compile_commands.json" AND NOT IS_SYMLINK "${CMAKE_SOURCE_DIR}/compile_commands.json")
       log_warning("Not symlink compile_commands.json found.")
