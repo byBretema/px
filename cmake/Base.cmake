@@ -12,23 +12,6 @@ option(ENABLE_ASAN          "Enable address sanitizer"             OFF)
 option(ENABLE_UBSAN         "Enable undefined behaviour sanitizer" OFF)
 option(WARNINGS_AS_ERRORS   "Treat compiler warnings as errors"    OFF)
 
-
-#-------------------------------------------------------------------------------
-# UI
-#-------------------------------------------------------------------------------
-
-set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
-
-#-------------------------------------------------------------------------------
-# Environment
-#-------------------------------------------------------------------------------
-
-# Ninja status format
-set(ENV{NINJA_STATUS} "[%p] ")
-
-# Ccache directory
-set(ENV{CCACHE_DIR} "${CMAKE_SOURCE_DIR}/.cache/ccache")
-
 #-------------------------------------------------------------------------------
 # Sane defaults
 #-------------------------------------------------------------------------------

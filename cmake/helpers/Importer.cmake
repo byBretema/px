@@ -5,9 +5,10 @@ include(FetchContent)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 
-set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/build/vendor" CACHE PATH
+set(DEPS_DIR "$ENV{DEPS_DIR}" CACHE PATH
     "Directory where FetchContent dependencies are stored")
-set(FETCHCONTENT_BASE_DIR "${VENDOR_DIR}")
+
+set(FETCHCONTENT_BASE_DIR "${DEPS_DIR}")
 set(FETCHCONTENT_QUIET ON)
 
 add_library(all_dependencies INTERFACE)

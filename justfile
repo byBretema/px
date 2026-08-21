@@ -1,4 +1,4 @@
-set shell := ["bash", "-cu"]
+set shell := ["bash", "-ceu"]
 
 # --- Options ---
 
@@ -6,7 +6,7 @@ preset := 'debug'
 generator := 'Ninja'
 config_flags := '' # --fresh
 build_flags := '' # --clean-first
-cpu_usage := '80'
+export cpu_usage := '80'
 
 # --- Default ---
 
@@ -24,13 +24,22 @@ _print_list title items:
 
 _root := justfile_directory()
 
-_build_dir := _root / 'build'
-_ccache_dir := _root / '.cache' / 'ccache'
+_build_dir := _root / '.build'
 
 _projects := `shopt -s nullglob; for d in projects/*/; do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
-_tests    := `shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
+_tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 
 _extra_config_flags := if path_exists(_build_dir) == "true" { "" } else { "--fresh" }
+
+_cores := `nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null`
+_jobs := if _cores != "" { `echo $(( ({{ _cores }} * {{ cpu_usage }} + 99) / 100 ))` } else { "4" }
+
+# --- Env ---
+
+export CCACHE_DIR := _root / '.cache' / 'ccache'
+export DEPS_DIR := _root / '.deps'
+
+export NINJA_STATUS := "[%p] "
 
 # --- List ---
 
@@ -54,13 +63,8 @@ _list_all:
 [private]
 config:
     @cmake -E make_directory "{{ _build_dir }}"
-    @cmake                        \
-        -S "{{ _root }}"          \
-        -B "{{ _build_dir }}"     \
-        -G "{{ generator }}"      \
-        --preset {{ preset }}     \
-        {{ config_flags }}        \
-        {{ _extra_config_flags }}
+    @cmake -S "{{ _root }}" -B "{{ _build_dir }}" -G "{{ generator }}" \
+        --preset {{ preset }} {{ config_flags }} {{ _extra_config_flags }}
 
 # --- Per target ---
 
@@ -68,52 +72,52 @@ config:
 [no-exit-message]
 build *targets: config
     @echo
-    @cores=$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null); \
-    if [[ -n "$cores" ]]; then \
-        jobs=$(( (cores * {{ cpu_usage }} + 99) / 100 )); \
-    else \
-        jobs=4; \
-    fi; \
-    if [[ -z "{{ targets }}" || "{{ targets }}" == "all" ]]; then \
-        cmake --build "{{ _build_dir }}" -j "$jobs" {{ build_flags }}; \
-    else \
-        cmake --build "{{ _build_dir }}" -j "$jobs" {{ build_flags }} --target {{ targets }}; \
-    fi
+    @cmake --build "{{ _build_dir }}" -j "{{ _jobs }}" {{ build_flags }} \
+        {{ if targets == "" { "" } else if targets == "all" { "" } else { " --target " + targets } }}
 
-# target [args]
 [no-exit-message]
 run target *args: (build target)
-    @echo
-    @bin="$(find "{{ _build_dir }}" -type f -name "{{ target }}" -perm -u+x 2>/dev/null | head -1)"; \
-    if [ -z "$bin" ]; then echo "no executable found for target '{{ target }}'"; exit 1; fi; \
+    #!/usr/bin/env bash
+    set -eu; echo
+    bin="$(find "{{ _build_dir }}" -type f -name "{{ target }}" -perm -u+x 2>/dev/null | head -1)"
+    if [[ -z "$bin" ]]; then
+        echo "no executable found for target '{{ target }}'"
+        exit 1
+    fi
     "$bin" {{ args }}
 
-# all / test_name(s) — space-separated runs multiple, empty runs all
+# space-separated runs multiple, empty runs all
 test *tests:
-    @echo
-    @echo "🧪 Building & running tests..."
-    @just build "{{ tests }}"
-    @r=""; [[ -n "{{ tests }}" ]] && r="^({{ replace(tests, ' ', '|') }})$"; \
-    ctest --test-dir "{{ _build_dir }}" \
-        --output-on-failure --parallel 8 -C {{ preset }} \
-        $( [ -n "$r" ] && echo "-R" "$r" ) \
-        | grep -v "^    Start"
+    #!/usr/bin/env bash
+    set -eu; echo; echo "Building & running tests..."
+    just build "{{ tests }}"
+    regex=""
+    if [[ -n "{{ tests }}" ]]; then
+        regex="^({{ replace(tests, ' ', '|') }})$"
+    fi
+    args=(--test-dir "{{ _build_dir }}" --output-on-failure --parallel 8 -C {{ preset }})
+    if [[ -n "$regex" ]]; then
+        args+=(-R "$regex")
+    fi
+    ctest "${args[@]}" | grep -v "^    Start"
 
 # --- Cleanup ---
 
-# all / target / build / external
-clean target="projects":
+# all / build / deps
+clean target="build":
     @just _clean_{{ target }}
 
-_clean_projects:
+_clean_build:
     @rm -rf "{{ _build_dir }}"
-    @rm -rf "{{ _ccache_dir }}"
+    @rm -rf "{{ CCACHE_DIR }}"
     @rm -f "{{ _root }}/compile_commands.json"
 
+_clean_deps:
+    @rm -rf "{{ DEPS_DIR }}"
+
 _clean_all:
-    @v="$(sed -n 's/^VENDOR_DIR:PATH=//p' "{{ _build_dir }}/CMakeCache.txt" 2>/dev/null | head -1)" || true; \
-    [ -n "$v" ] && rm -rf "$v" || true
-    @just _clean_projects
+    @just _clean_build
+    @just _clean_deps
 
 # --- Scaffolding ---
 
