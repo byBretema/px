@@ -6,19 +6,24 @@ preset := 'debug'
 generator := 'Ninja'
 config_flags := '' # --fresh
 build_flags := '' # --clean-first
-export cpu_usage := '80'
+cpu_usage := '80'
 
 # --- Default ---
 
+[private]
 default:
-    @just list "base"
+    @just list
 
 # --- Functions ---
 
 _print_list title items:
     @echo "{{ title }}:"
-    @if [[ -n "{{ items }}" ]]; then echo "    {{ replace(items, "\n", "\n    ") }}"; fi
+    @[[ -n "{{ items }}" ]] && echo "    {{ replace(items, "\n", "\n    ") }}"
     @echo
+
+_num_of_jobs:
+    @cores="$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"; \
+    echo $(( (cores * {{ cpu_usage }} + 99) / 100 ))
 
 # --- Auto vars ---
 
@@ -31,9 +36,6 @@ _tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.tx
 
 _extra_config_flags := if path_exists(_build_dir) == "true" { "" } else { "--fresh" }
 
-_cores := `nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null`
-_jobs := if _cores != "" { `echo $(( ({{ _cores }} * {{ cpu_usage }} + 99) / 100 ))` } else { "4" }
-
 # --- Env ---
 
 export CCACHE_DIR := _root / '.cache' / 'ccache'
@@ -43,12 +45,13 @@ export NINJA_STATUS := "[%p] "
 
 # --- List ---
 
-list target="base":
+#  all += presets
+list *target:
     @echo
     @just _list_{{ target }}
     @just -l -u
 
-_list_base:
+_list_:
     @just _print_list "Available projects" "{{ _projects }}"
     @just _print_list "Available tests" "{{ _tests }}"
 
@@ -68,12 +71,15 @@ config:
 
 # --- Per target ---
 
-# all / target
+# list... / empty == all
 [no-exit-message]
 build *targets: config
-    @echo
-    @cmake --build "{{ _build_dir }}" -j "{{ _jobs }}" {{ build_flags }} \
-        {{ if targets == "" { "" } else if targets == "all" { "" } else { " --target " + targets } }}
+    #!/usr/bin/env bash
+    set -eu; echo
+    cmake_args=()
+    [[ -n "{{ build_flags }}" ]] && cmake_args+=({{ build_flags }})
+    [[ -n "{{ targets }}"     ]] && cmake_args+=(--target {{ targets }})
+    cmake --build "{{ _build_dir }}" -j "$(just _num_of_jobs)" "${cmake_args[@]}"
 
 [no-exit-message]
 run target *args: (build target)
@@ -86,7 +92,7 @@ run target *args: (build target)
     fi
     "$bin" {{ args }}
 
-# space-separated runs multiple, empty runs all
+# list... / empty == all
 test *tests:
     #!/usr/bin/env bash
     set -eu; echo; echo "Building & running tests..."
@@ -130,7 +136,7 @@ add_exe name:
     @if ! grep -qF "add_subdirectory({{ name }})" "{{ _root }}/projects/CMakeLists.txt"; then echo "add_subdirectory({{ name }})" >> "{{ _root }}/projects/CMakeLists.txt"; fi
     @echo "created exe: {{ name }}"
 
-# type = SHARED / STATIC
+# SHARED / STATIC
 add_lib name type="SHARED":
     @if ! echo "{{ name }}" | grep -qE '^[A-Za-z0-9_.-]+$'; then echo "invalid name: {{ name }}"; exit 1; fi
     @if [ -e "{{ _root }}/projects/{{ name }}" ]; then echo "already exists: {{ name }}"; exit 1; fi

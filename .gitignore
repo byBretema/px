@@ -1,6 +1,9 @@
 
 # --- CMake Framework / Build --------------------------------------------------
 
+.build/
+.deps/
+.cache/
 build/
 compile_commands.json
 
