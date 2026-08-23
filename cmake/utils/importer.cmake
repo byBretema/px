@@ -1,4 +1,6 @@
-# Importer helpers
+#-------------------------------------------------------------------------------
+# Importer utils
+#-------------------------------------------------------------------------------
 
 include(FetchContent)
 
@@ -145,7 +147,7 @@ function(import_dependency qualified_target)
     set(repo_url "https://bitbucket.org/${ARG_BITBUCKET}.git")
     set(shorthand "${ARG_BITBUCKET}")
   else()
-    log_fata("import_dependency: one of REPOSITORY / GITHUB / GITLAB / BITBUCKET is required")
+    log_fatal("import_dependency: one of REPOSITORY / GITHUB / GITLAB / BITBUCKET is required")
   endif()
 
   # --- Validate required arguments ---

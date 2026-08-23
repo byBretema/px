@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.28)
 
-include(cmake/y.cmake)
+include(cmake/base.cmake)
 
 pre_project()
-project(px  VERSION 0.0.1  DESCRIPTION "Render engine")
+project("px"  VERSION "0.0.1"  DESCRIPTION "Render engine")
 post_project()
 
 log_header("Sub Projects")

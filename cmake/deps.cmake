@@ -1,8 +1,8 @@
-# Vendoring management
+# External deps management
 
 include_guard(DIRECTORY)
 
-include(${CMAKE_CURRENT_LIST_DIR}/helpers/Importer.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/utils/importer.cmake)
 
 #-------------------------------------------------------------------------------
 # Printing — fmtlib

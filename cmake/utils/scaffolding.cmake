@@ -1,7 +1,10 @@
-# Scaffolding helpers + Tracking targets
+#-------------------------------------------------------------------------------
+# Scaffolding + Tracking targets
+#-------------------------------------------------------------------------------
+
 
 include_guard(DIRECTORY)
-include(${CMAKE_CURRENT_LIST_DIR}/Logger.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/logger.cmake)
 
 set(__export_namespace "${PROJECT_NAME}" CACHE INTERNAL "Namespace for install targets")
 set(__export_targets "" CACHE INTERNAL "Targets registered for export")
