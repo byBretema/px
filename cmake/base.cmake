@@ -10,8 +10,15 @@ set(__base_dir ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
 
 
 macro(pre_project)
+
   log_level_to_notice()
+
+  if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+    message(FATAL_ERROR "In-source builds are forbidden. Use -B build")
+  endif()
+
   set(__pre_project_invoked ON CACHE INTERNAL "'pre_project' invoked correctly")
+
 endmacro()
 
 
@@ -45,6 +52,10 @@ macro(post_project)
   include(${__base_dir}/configs/warnings.cmake)
   include(${__base_dir}/configs/sanitizers.cmake)
   include(${__base_dir}/configs/compile_commands.cmake)
+  include(${__base_dir}/configs/malloc.cmake)
+
+  set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+  set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
   unset(__base_dir)
 
