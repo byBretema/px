@@ -2,7 +2,7 @@
 # Compile Commands
 #-------------------------------------------------------------------------------
 
-if(USE_COMPILE_COMMANDS AND NOT DEFINED CMAKE_EXPORT_COMPILE_COMMANDS)
+if(USE_COMPILE_COMMANDS)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 

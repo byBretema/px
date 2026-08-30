@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.28)
 
 include(cmake/base.cmake)
 
+# set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 pre_project()
 project("px"  VERSION "0.0.1"  DESCRIPTION "Render engine")
 post_project()

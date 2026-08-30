@@ -3,7 +3,8 @@
   "configurePresets": [
     {
       "hidden": true,
-      "name": "base"
+      "name": "base",
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "hidden": true,
@@ -18,7 +19,7 @@
     {
       "hidden": true,
       "name": "werror",
-      "cacheVariables": { "WARNINGS_AS_ERRORS": "ON" }
+      "cacheVariables": { "FORCE_ERROR": "ON" }
     },
     {
       "hidden": true,

@@ -7,20 +7,42 @@ include(FetchContent)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 
-set(DEPS_DIR "$ENV{DEPS_DIR}" CACHE PATH
-    "Directory where FetchContent dependencies are stored")
-
 set(FETCHCONTENT_BASE_DIR "${DEPS_DIR}")
 set(FETCHCONTENT_QUIET ON)
 
 add_library(all_dependencies INTERFACE)
 
-macro(__add_interface_dependency namespace target fetch_id subdir)
+macro(__add_dependency namespace target fetch_id subdir)
   if(NOT TARGET ${namespace}::${target})
+    # 3-step target lookup: qualified → plain → underscore
+    set(_candidates
+      ${namespace}::${target}
+      ${target}
+      ${namespace}_${target}
+    )
+    set(_real_target "")
+    foreach(_name IN LISTS _candidates)
+      if(TARGET ${_name})
+        set(_real_target ${_name})
+        break()
+      endif()
+    endforeach()
+
     add_library(${namespace}_${target} INTERFACE)
-    target_include_directories(${namespace}_${target} INTERFACE "${${fetch_id}_SOURCE_DIR}/${subdir}")
+    target_include_directories(${namespace}_${target} INTERFACE
+      "${${fetch_id}_SOURCE_DIR}/${subdir}")
+
+    # Link compiled targets (skip INTERFACE — headers only)
+    if(_real_target)
+      get_target_property(_type ${_real_target} TYPE)
+      if(NOT _type STREQUAL "INTERFACE_LIBRARY")
+        target_link_libraries(${namespace}_${target} INTERFACE ${_real_target})
+      endif()
+    endif()
+
     add_library(${namespace}::${target} ALIAS ${namespace}_${target})
   endif()
+
   target_link_libraries(all_dependencies INTERFACE ${namespace}::${target})
 endmacro()
 
@@ -109,7 +131,9 @@ function(__detect_include_subdir fetch_id out_var)
 endfunction()
 
 #-------------------------------------------------------------------------------
-# import_dependency — one-shot FetchContent declaration, population, and target creation for a header-only library.
+# import_dependency — FetchContent declaration, population, and target creation.
+#   Works for header-only, static, and shared libraries.
+#   Auto-detects the target type via the TYPE property after MakeAvailable.
 #
 #   qualified_target   CMake target name in the form "namespace::target".
 #                      This becomes the actual target users link against.
@@ -122,6 +146,7 @@ endfunction()
 #   SUBDIR             (optional) Override the auto-detected include
 #                      subdirectory.  Use when the heuristic fails for an
 #                      unusual repository layout.
+#   BUILD_TYPE         (optional) Override DEPS_BUILD_TYPE for this dep.
 #   OPTIONS            (optional) CMake variables to set before the library's
 #                      own CMake runs.  Pass as KEY=VALUE pairs.
 #
@@ -130,7 +155,7 @@ endfunction()
 # once and the include directory is shared.
 #-------------------------------------------------------------------------------
 function(import_dependency qualified_target)
-  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH" "OPTIONS" ${ARGN})
+  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH;BUILD_TYPE" "OPTIONS" ${ARGN})
 
   # --- Resolve repository URL from shorthand or full URL ---
   set(shorthand "")
@@ -177,10 +202,32 @@ function(import_dependency qualified_target)
   # --- Fetch the dependency (only once per fetch_id) ---
   set(fetch_guard __fetched_${fetch_id})
   if(NOT DEFINED ${fetch_guard})
+    # --- Build type for this dep (overrides DEPS_BUILD_TYPE) ---
+    set(_dep_build_type "${DEPS_BUILD_TYPE}")
+    if(DEFINED ARG_BUILD_TYPE)
+      set(_dep_build_type "${ARG_BUILD_TYPE}")
+    endif()
+
+    # Pass build flags via CMAKE_ARGS so they persist in add_subdirectory scopes.
+    set(_dep_cmake_args "")
+    if(_dep_build_type)
+      list(APPEND _dep_cmake_args -DCMAKE_BUILD_TYPE=${_dep_build_type})
+    endif()
+
+    if(DEPS_FORCE_OPTIMIZATION)
+      if(MSVC)
+        list(APPEND _dep_cmake_args -DCMAKE_C_FLAGS=/O2 -DCMAKE_CXX_FLAGS=/O2)
+      else()
+        list(APPEND _dep_cmake_args -DCMAKE_C_FLAGS=-O3 -DCMAKE_CXX_FLAGS=-O3)
+      endif()
+    endif()
+
     FetchContent_Declare(${fetch_id}
       GIT_REPOSITORY ${repo_url}
       GIT_TAG        ${ARG_TAG}
       GIT_SHALLOW    TRUE
+      SYSTEM         TRUE
+      CMAKE_ARGS     ${_dep_cmake_args}
     )
 
     foreach(opt ${ARG_OPTIONS})
@@ -233,9 +280,11 @@ function(import_dependency qualified_target)
     endif()
 
     log_status("${status}${qualified_target}${suffix}")
+
     log_level_to_notice()
     FetchContent_MakeAvailable(${fetch_id})
     log_level_restore()
+
     set(${fetch_guard} TRUE)
   endif()
 
@@ -247,6 +296,5 @@ function(import_dependency qualified_target)
   endif()
 
   # --- Create the CMake target ---
-  __add_interface_dependency(${ns} ${target} ${fetch_id} "${subdir}")
+  __add_dependency(${ns} ${target} ${fetch_id} "${subdir}")
 endfunction()
-

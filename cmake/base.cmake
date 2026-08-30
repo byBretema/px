@@ -41,23 +41,29 @@ macro(post_project)
   log_status("Compiler for C++ -> ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
   log_status("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})")
 
-  log_header("Fulfilling dependencies")
-  include(${__base_dir}/deps.cmake)
-
-  log_header("Setup")
+  # 1. Options
   include(${__base_dir}/configs/options.cmake)
+  include(${__base_dir}/configs/compile_commands.cmake)
+
+  # 2. Deps
+  log_header("Fulfilling dependencies")
+
+  include(${__base_dir}/deps.cmake)
+  include(${__base_dir}/configs/malloc.cmake)
+
+  # 3. Project setup
+  log_header("Setup")
+
   include(${__base_dir}/configs/defaults.cmake)
   include(${__base_dir}/configs/cache.cmake)
   include(${__base_dir}/configs/linker.cmake)
   include(${__base_dir}/configs/warnings.cmake)
   include(${__base_dir}/configs/sanitizers.cmake)
-  include(${__base_dir}/configs/compile_commands.cmake)
-  include(${__base_dir}/configs/malloc.cmake)
 
   set(CMAKE_DISABLE_SOURCE_CHANGES ON)
   set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
+  # Cleanup
   unset(__base_dir)
 
 endmacro()
-

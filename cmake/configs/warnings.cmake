@@ -85,7 +85,7 @@ function(setup_warnings project_name)
 
   # Enable compiling warnings as errors by default (based on exposed option)
 
-  if(WARNINGS_AS_ERRORS)
+  if(FORCE_ERROR)
     set_target_properties(${project_name} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
   endif()
 
