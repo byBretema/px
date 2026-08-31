@@ -16,8 +16,11 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 # Static libraries are PIC, linkable into shared ones
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Suffix debug libs
-set(CMAKE_DEBUG_POSTFIX "-d")
+# NOTE: CMAKE_DEBUG_POSTFIX is intentionally omitted. It conflicts with
+# DEPS_BUILD_TYPE forcing different build types per dependency — in single-config
+# generators the consuming target resolves library paths using the global
+# CMAKE_BUILD_TYPE + CMAKE_DEBUG_POSTFIX, producing mismatched filenames when
+# deps are built as Release while the project is Debug.
 
 # LTO on optimized builds
 if(CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$")

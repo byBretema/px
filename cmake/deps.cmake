@@ -13,6 +13,7 @@ import_dependency(fmt::fmt
   OPTIONS   FMT_INSTALL=OFF
             FMT_TEST=OFF
             FMT_DOC=OFF
+            FMT_DEBUG_POSTFIX=
 )
 
 #-------------------------------------------------------------------------------
@@ -133,6 +134,18 @@ import_dependency(range-v3::range-v3
 import_dependency(phmap::phmap
   GITHUB    greg7mdp/parallel-hashmap
   TAG       v2.0.0
+)
+
+#-------------------------------------------------------------------------------
+# ECS — EnTT (entity-component-system)
+#-------------------------------------------------------------------------------
+import_dependency(EnTT::EnTT
+  GITHUB    skypjack/entt
+  TAG       v4.0.0
+  OPTIONS   ENTT_BUILD_TESTING=OFF
+            ENTT_BUILD_BENCHMARK=OFF
+            ENTT_BUILD_DOCS=OFF
+            ENTT_BUILD_EXAMPLE=OFF
 )
 
 #-------------------------------------------------------------------------------

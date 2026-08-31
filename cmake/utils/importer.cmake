@@ -32,7 +32,7 @@ macro(__add_dependency namespace target fetch_id subdir)
     target_include_directories(${namespace}_${target} INTERFACE
       "${${fetch_id}_SOURCE_DIR}/${subdir}")
 
-    # Link compiled targets (skip INTERFACE — headers only)
+    # Link compiled targets (skip INTERFACE — headers only).
     if(_real_target)
       get_target_property(_type ${_real_target} TYPE)
       if(NOT _type STREQUAL "INTERFACE_LIBRARY")
@@ -281,9 +281,25 @@ function(import_dependency qualified_target)
 
     log_status("${status}${qualified_target}${suffix}")
 
+    # Override CMAKE_BUILD_TYPE in the current (function) scope so that
+    # add_subdirectory children inherit the dependency's build type.
+    #
+    # Why a plain set() and not CACHE FORCE:
+    #   Directory-scope variables shadow cache entries. A FORCE-set cache
+    #   value is invisible to add_subdirectory when a non-cache variable
+    #   (set during project()) already exists in the calling scope. Worse,
+    #   FORCE-writing the cache can trigger a cmake reconfigure loop.
+    set(_parent_build_type "${CMAKE_BUILD_TYPE}")
+    if(_dep_build_type)
+      set(CMAKE_BUILD_TYPE "${_dep_build_type}")
+    endif()
+
     log_level_to_notice()
     FetchContent_MakeAvailable(${fetch_id})
     log_level_restore()
+
+    # Restore parent build type
+    set(CMAKE_BUILD_TYPE "${_parent_build_type}")
 
     set(${fetch_guard} TRUE)
   endif()
