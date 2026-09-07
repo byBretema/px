@@ -47,90 +47,6 @@ macro(__add_dependency namespace target fetch_id subdir)
 endmacro()
 
 #-------------------------------------------------------------------------------
-# __detect_include_subdir — auto-detect the include subdirectory for a
-#   FetchContent dependency after it has been populated.
-#
-#   fetch_id : name of the FetchContent variable (the first argument passed
-#              to FetchContent_Declare). The source tree is expected at
-#              ${${fetch_id}_SOURCE_DIR}.
-#   out_var  : name of the output variable that receives the detected path
-#              relative to the source root (e.g. "include", ".", "asio/include").
-#
-# Detection heuristic:
-#   1.  Root contains .h/.hpp files  →  "."
-#   2a. include/src/source dir has   →  that dir
-#       direct .h/.hpp files
-#   2b. include/src/source dir has   →  that dir
-#       subdirectories with .h/.hpp
-#   3.  A top-level dir contains     →  "dir/include" if it has an include/
-#       headers                          subdirectory, else "."
-#-------------------------------------------------------------------------------
-function(__detect_include_subdir fetch_id out_var)
-  set(src_dir "${${fetch_id}_SOURCE_DIR}")
-
-  if(NOT IS_DIRECTORY "${src_dir}")
-    log_warning("ProjectSetup: source dir '${src_dir}' not found for ${fetch_id}, defaulting to '.'")
-    set(${out_var} "." PARENT_SCOPE)
-    return()
-  endif()
-
-  # --- Tier 1: root contains headers directly ---
-  file(GLOB root_h  "${src_dir}/*.h")
-  file(GLOB root_hpp "${src_dir}/*.hpp")
-  if(root_h OR root_hpp)
-    set(${out_var} "." PARENT_SCOPE)
-    return()
-  endif()
-
-  # --- Tier 2: conventional include/src/source dirs ---
-  foreach(candidate "include" "src" "source")
-    if(NOT IS_DIRECTORY "${src_dir}/${candidate}")
-      continue()
-    endif()
-
-    # Tier 2a: headers directly inside (e.g. source/utf8.h)
-    file(GLOB direct "${src_dir}/${candidate}/*.h" "${src_dir}/${candidate}/*.hpp")
-    if(direct)
-      set(${out_var} "${candidate}" PARENT_SCOPE)
-      return()
-    endif()
-
-    # Tier 2b: headers in subdirs inside (e.g. include/fmt/format.h)
-    file(GLOB subs "${src_dir}/${candidate}/*")
-    foreach(sub ${subs})
-      if(IS_DIRECTORY "${sub}")
-        file(GLOB sub_h "${sub}/*.h" "${sub}/*.hpp")
-        if(sub_h)
-          set(${out_var} "${candidate}" PARENT_SCOPE)
-          return()
-        endif()
-      endif()
-    endforeach()
-  endforeach()
-
-  # --- Tier 3: scan top-level dirs for headers ---
-  file(GLOB entries "${src_dir}/*")
-  foreach(entry ${entries})
-    if(IS_DIRECTORY "${entry}")
-      file(GLOB_RECURSE h "${entry}/*.h" "${entry}/*.hpp")
-      if(h)
-        file(RELATIVE_PATH rel "${src_dir}" "${entry}")
-        if(IS_DIRECTORY "${entry}/include")
-          set(${out_var} "${rel}/include" PARENT_SCOPE)
-        else()
-          set(${out_var} "." PARENT_SCOPE)
-        endif()
-        return()
-      endif()
-    endif()
-  endforeach()
-
-  # --- Fallback ---
-  log_warning("ProjectSetup: could not detect subdir for ${fetch_id}, defaulting to '.'")
-  set(${out_var} "." PARENT_SCOPE)
-endfunction()
-
-#-------------------------------------------------------------------------------
 # import_dependency — FetchContent declaration, population, and target creation.
 #   Works for header-only, static, and shared libraries.
 #   Auto-detects the target type via the TYPE property after MakeAvailable.
@@ -143,9 +59,8 @@ endfunction()
 #       GITLAB             GitLab shorthand "org/repo"     →  https://gitlab.com/org/repo.git
 #       BITBUCKET          Bitbucket shorthand "org/repo"  →  https://bitbucket.org/org/repo.git
 #   TAG                Git tag, branch, or commit hash.
-#   SUBDIR             (optional) Override the auto-detected include
-#                      subdirectory.  Use when the heuristic fails for an
-#                      unusual repository layout.
+#   SUBDIR             Include subdirectory relative to the source root
+#                      (e.g. "include", ".", "asio/include").
 #   BUILD_TYPE         (optional) Override DEPS_BUILD_TYPE for this dep.
 #   OPTIONS            (optional) CMake variables to set before the library's
 #                      own CMake runs.  Pass as KEY=VALUE pairs.
@@ -178,6 +93,10 @@ function(import_dependency qualified_target)
   # --- Validate required arguments ---
   if(NOT ARG_TAG)
     log_fatal("import_dependency: TAG is required")
+  endif()
+
+  if(NOT ARG_SUBDIR)
+    log_fatal("import_dependency: SUBDIR is required")
   endif()
 
   # --- Parse qualified_target into namespace and target ---
@@ -304,13 +223,6 @@ function(import_dependency qualified_target)
     set(${fetch_guard} TRUE)
   endif()
 
-  # --- Auto-detect (or use override) the include subdirectory ---
-  if(DEFINED ARG_SUBDIR)
-    set(subdir "${ARG_SUBDIR}")
-  else()
-    __detect_include_subdir(${fetch_id} subdir)
-  endif()
-
   # --- Create the CMake target ---
-  __add_dependency(${ns} ${target} ${fetch_id} "${subdir}")
+  __add_dependency(${ns} ${target} ${fetch_id} "${ARG_SUBDIR}")
 endfunction()

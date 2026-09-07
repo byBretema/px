@@ -109,6 +109,10 @@ test *tests:
 
 # --- Cleanup ---
 
+# Check for stale glob-manifest (CI gate).
+stale-check:
+    @cmake -P "{{ _root }}/cmake/stale-check.cmake" "{{ _build_dir }}"
+
 # all / build / deps
 clean target="build":
     @just _clean_{{ target }}

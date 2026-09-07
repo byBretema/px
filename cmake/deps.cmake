@@ -10,6 +10,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/utils/importer.cmake)
 import_dependency(fmt::fmt
   GITHUB    fmtlib/fmt
   TAG       11.1.4
+  SUBDIR    include
   OPTIONS   FMT_INSTALL=OFF
             FMT_TEST=OFF
             FMT_DOC=OFF
@@ -22,6 +23,7 @@ import_dependency(fmt::fmt
 import_dependency(asio::asio
   GITHUB    chriskohlhoff/asio
   TAG       asio-1-38-2
+  SUBDIR    asio/include
   OPTIONS   ASIO_STANDALONE=ON
             ASIO_NO_DEPRECATED=ON
 )
@@ -32,6 +34,7 @@ import_dependency(asio::asio
 import_dependency(httplib::httplib
   GITHUB    yhirose/cpp-httplib
   TAG       v0.18.2
+  SUBDIR    .
 )
 
 #-------------------------------------------------------------------------------
@@ -40,6 +43,7 @@ import_dependency(httplib::httplib
 import_dependency(cpr::cpr
   GITHUB    libcpr/cpr
   TAG       1.11.1
+  SUBDIR    include
   OPTIONS   CPR_BUILD_TESTS=OFF
             CPR_BUILD_EXAMPLES=OFF
             CPR_USE_SYSTEM_CURL=ON
@@ -51,6 +55,7 @@ import_dependency(cpr::cpr
 import_dependency(glaze::glaze
   GITHUB    stephenberry/glaze
   TAG       v7.9.1
+  SUBDIR    include
   OPTIONS   glaze_BUILD_TEST=OFF
             glaze_INSTALL=OFF
 )
@@ -61,6 +66,7 @@ import_dependency(glaze::glaze
 import_dependency(utfcpp::utfcpp
   GITHUB    nemtrif/utfcpp
   TAG       v4.0.6
+  SUBDIR    source
 )
 
 #-------------------------------------------------------------------------------
@@ -69,6 +75,7 @@ import_dependency(utfcpp::utfcpp
 import_dependency(argparse::argparse
   GITHUB    p-ranav/argparse
   TAG       v3.2
+  SUBDIR    include
 )
 
 #-------------------------------------------------------------------------------
@@ -77,6 +84,7 @@ import_dependency(argparse::argparse
 import_dependency(glm::glm
   GITHUB    g-truc/glm
   TAG       1.0.1
+  SUBDIR    .
   OPTIONS   GLM_TEST_ENABLE=OFF
             GLM_INSTALL_ENABLE=OFF
 )
@@ -87,6 +95,7 @@ import_dependency(glm::glm
 import_dependency(ctre::ctre
   GITHUB    hanickadot/compile-time-regular-expressions
   TAG       v3.10.0
+  SUBDIR    include
 )
 
 #-------------------------------------------------------------------------------
@@ -95,6 +104,7 @@ import_dependency(ctre::ctre
 import_dependency(tl::expected
   GITHUB    TartanLlama/expected
   TAG       v1.1.0
+  SUBDIR    include
   OPTIONS   EXPECTED_BUILD_TESTS=OFF
 )
 
@@ -104,6 +114,7 @@ import_dependency(tl::expected
 import_dependency(fu2::function
   GITHUB    Naios/function2
   TAG       4.2.2
+  SUBDIR    include
 )
 
 #-------------------------------------------------------------------------------
@@ -112,6 +123,7 @@ import_dependency(fu2::function
 import_dependency(enum::enum
   GITHUB    aantron/better-enums
   TAG       0.11.3
+  SUBDIR    .
 )
 
 #-------------------------------------------------------------------------------
@@ -120,6 +132,7 @@ import_dependency(enum::enum
 import_dependency(range-v3::range-v3
   GITHUB    ericniebler/range-v3
   TAG       0.12.0
+  SUBDIR    include
   OPTIONS   RANGES_BUILD_CALENDAR_EXAMPLE=OFF
             RANGES_BUILD_DOCS=OFF
             RANGE_V3_TESTS=OFF
@@ -134,6 +147,7 @@ import_dependency(range-v3::range-v3
 import_dependency(phmap::phmap
   GITHUB    greg7mdp/parallel-hashmap
   TAG       v2.0.0
+  SUBDIR    .
 )
 
 #-------------------------------------------------------------------------------
@@ -142,6 +156,7 @@ import_dependency(phmap::phmap
 import_dependency(EnTT::EnTT
   GITHUB    skypjack/entt
   TAG       v4.0.0
+  SUBDIR    src
   OPTIONS   ENTT_BUILD_TESTING=OFF
             ENTT_BUILD_BENCHMARK=OFF
             ENTT_BUILD_DOCS=OFF
@@ -154,6 +169,7 @@ import_dependency(EnTT::EnTT
 import_dependency(EASTL::EASTL
   GITHUB    electronicarts/EASTL
   TAG       3.21.23
+  SUBDIR    include
   OPTIONS   EASTL_BUILD_TESTS=OFF
             EASTL_BUILD_BENCHMARK=OFF
 )

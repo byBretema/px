@@ -59,6 +59,7 @@ macro(post_project)
   include(${__base_dir}/configs/linker.cmake)
   include(${__base_dir}/configs/warnings.cmake)
   include(${__base_dir}/configs/sanitizers.cmake)
+  include(${__base_dir}/utils/manifest.cmake)
 
   set(CMAKE_DISABLE_SOURCE_CHANGES ON)
   set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
