@@ -19,7 +19,6 @@ option(ENABLE_UBSAN "Enable undefined behaviour sanitizer" OFF)
 # Options: Force
 
 option(FORCE_ERROR "Treat compiler warnings as errors" OFF)
-option(DEPS_FORCE_OPTIMIZATION "Compile FetchContent dependencies with maximum optimization" ON)
 
 
 # Vars

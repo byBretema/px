@@ -118,6 +118,18 @@ function(import_dependency qualified_target)
   string(REPLACE "/" "_" fetch_id "${fetch_id}")
   string(TOLOWER "${fetch_id}" fetch_id)
 
+  # --- Apply OPTIONS before fetch guard ---
+  # CACHE FORCE is the only mechanism that overrides dep-defined cache
+  # entries (e.g. FMT_DEBUG_POSTFIX=d) before add_subdirectory creates
+  # the child scope. CMAKE_ARGS is a no-op for add_subdirectory paths.
+  foreach(opt ${ARG_OPTIONS})
+    if(opt MATCHES "^([^=]+)=(.*)$")
+      set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE STRING "" FORCE)
+    else()
+      log_fatal("import_dependency: OPTIONS must be KEY=VALUE, got: ${opt}")
+    endif()
+  endforeach()
+
   # --- Fetch the dependency (only once per fetch_id) ---
   set(fetch_guard __fetched_${fetch_id})
   if(NOT DEFINED ${fetch_guard})
@@ -127,18 +139,10 @@ function(import_dependency qualified_target)
       set(_dep_build_type "${ARG_BUILD_TYPE}")
     endif()
 
-    # Pass build flags via CMAKE_ARGS so they persist in add_subdirectory scopes.
+    # Pass build type via CMAKE_ARGS (ExternalProject fallback only).
     set(_dep_cmake_args "")
     if(_dep_build_type)
       list(APPEND _dep_cmake_args -DCMAKE_BUILD_TYPE=${_dep_build_type})
-    endif()
-
-    if(DEPS_FORCE_OPTIMIZATION)
-      if(MSVC)
-        list(APPEND _dep_cmake_args -DCMAKE_C_FLAGS=/O2 -DCMAKE_CXX_FLAGS=/O2)
-      else()
-        list(APPEND _dep_cmake_args -DCMAKE_C_FLAGS=-O3 -DCMAKE_CXX_FLAGS=-O3)
-      endif()
     endif()
 
     FetchContent_Declare(${fetch_id}
@@ -148,14 +152,6 @@ function(import_dependency qualified_target)
       SYSTEM         TRUE
       CMAKE_ARGS     ${_dep_cmake_args}
     )
-
-    foreach(opt ${ARG_OPTIONS})
-      if(opt MATCHES "^([^=]+)=(.*)$")
-        set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE STRING "" FORCE)
-      else()
-        log_fatal("import_dependency: OPTIONS must be KEY=VALUE, got: ${opt}")
-      endif()
-    endforeach()
 
     string(TOUPPER "${fetch_id}" upper_id)
 

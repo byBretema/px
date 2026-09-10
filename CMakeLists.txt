@@ -2,10 +2,8 @@ cmake_minimum_required(VERSION 3.28)
 
 include(cmake/base.cmake)
 
-# set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 pre_project()
-project("px"  VERSION "0.0.1"  DESCRIPTION "Render engine")
+project("px"  VERSION "0.0.1"  DESCRIPTION "A cpp project start point: CMake wrapper to manage deps and opinionated sane-defaults")
 post_project()
 
 log_header("Sub Projects")
