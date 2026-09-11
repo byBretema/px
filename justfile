@@ -30,6 +30,7 @@ _num_of_jobs:
 _root := justfile_directory()
 
 _build_dir := _root / '.build'
+_cache_dir := _root / '.cache'
 
 _projects := `shopt -s nullglob; for d in projects/*/; do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 _tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
@@ -37,8 +38,10 @@ _tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.tx
 _extra_config_flags := if path_exists(_build_dir) == "true" { "" } else { "--fresh" }
 
 # --- Env ---
+# Do not rename vars in this list they are used by CMake
+# or other tools to override specific behaviors or output folders.
 
-export CCACHE_DIR := _root / '.cache' / 'ccache'
+export CCACHE_DIR := _cache_dir / 'ccache'
 export DEPS_DIR := _root / '.deps'
 
 export NINJA_STATUS := "[%p] "
@@ -119,7 +122,7 @@ clean target="build":
 
 _clean_build:
     @rm -rf "{{ _build_dir }}"
-    @rm -rf "{{ CCACHE_DIR }}"
+    @rm -rf "{{ _cache_dir }}"
     @rm -f "{{ _root }}/compile_commands.json"
 
 _clean_deps:
