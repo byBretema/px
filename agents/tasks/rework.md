@@ -49,6 +49,7 @@
 | B7  | Warning flags `PUBLIC` leak               | **Done**      | 2026-09-12 | `warnings.cmake:94-100` changed `PUBLIC` → `PRIVATE` on all `target_compile_options`.                                                                                                                                                                                                                                                 |
 | B6  | Macros leaked scope, required CACHE workaround | **Done**  | 2026-09-12 | All `make_*` macros + `setup_testing` converted to functions in `scaffolding.cmake`.                                                                                                                                                                                                                                                   |
 | B5  | CACHE INTERNAL for target tracking            | **Done**  | 2026-09-12 | CACHE INTERNAL is correct for cross-subdir state sharing. Resolved by B6 — functions eliminate scope leaks, cache usage is intentional.                                                                                                                                                                                                |
+| B8  | CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS              | **Done**  | 2026-09-12 | Removed. Dead code — no shared library targets in project.                                                                                                                                                                                                                                                                              |
 
 ### Key Decisions
 
@@ -69,7 +70,7 @@
 | —   | `cmake/stale-check.cmake`    | 41    | new   |
 | 14  | `CMakeLists.txt`             | 24    | +5    |
 | —   | `justfile`                   | 152   | +4    |
-| 7   | `cmake/configs/defaults.cmake` | 48  | +6    |
+| 7   | `cmake/configs/defaults.cmake` | 46  | +4    |
 
 All other files unchanged.
 
@@ -105,7 +106,7 @@ All other files unchanged.
 | B5  | ~~`CACHE INTERNAL` state for target tracking~~                 | ~~`scaffolding.cmake:9-10`~~        | ~~Medium~~          | **Resolved** — `CACHE INTERNAL` is correct for cross-subdir state sharing. Macros converted to functions (B6) eliminates scope-leak side effect; cache usage is now intentional, not a workaround.                                                                                                                                       |
 | B6  | ~~`macro()` where `function()` would be safer~~                | ~~`scaffolding.cmake:26,48,73,87,92`~~ | ~~Medium~~       | **Resolved** — All `make_*` macros + `setup_testing` converted to functions in `scaffolding.cmake`. `CACHE INTERNAL` for `__export_targets` retained (correct for cross-subdir state sharing).                                                                                                                                                |
 | B7  | ~~Warning flags set `PUBLIC` — leaks to consumers~~            | ~~`warnings.cmake:95-99`~~         | ~~\*\*High\*\*~~    | **Resolved** — `warnings.cmake:94-100` changed `PUBLIC` → `PRIVATE` on all `target_compile_options` calls. Warning flags no longer leak to downstream consumers.                                                                                                                                                                            |
-| B8  | `CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` — crutch                  | `defaults.cmake:34`                | Medium              | Open                                                                                                                                                                                                        |
+| B8  | ~~`CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` — crutch~~               | ~~`defaults.cmake:34`~~            | ~~Medium~~          | **Resolved** — Removed `defaults.cmake:33-34`. Dead code: project has no shared library targets (`make_lib` never called). Only `make_hlib` (INTERFACE) and `make_test` (executable) are used.                                                                                                                                                |
 | B9  | ~~LTO set without `check_ipo_supported()`~~                    | ~~`defaults.cmake:26-28`~~         | ~~\*\*High~~\*\*    | **Resolved** — `defaults.cmake:26-34` now calls `check_ipo_supported()` via `CheckIPOSupported` module. Warning (not fatal) on unsupported compilers.                                                                                                                               |
 | B10 | mimalloc warnings suppressed via `-w`                        | `malloc.cmake:32-35`               | Low                 | Open                                                                                                                                                                                                        |
 | B11 | ~~Hard-coded `-O3` override for all deps~~                    | ~~`importer.cmake:217-223`~~       | ~~Medium~~          | **Resolved** — Removed in `a218e66` ("better flags +"). Lines no longer contain `-O3` override.                                                                                                                                                                         |
@@ -116,9 +117,9 @@ All other files unchanged.
 
 ### Top 3 Impact
 
-1. **B8** — `CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` — crutch
-2. **B10** — mimalloc warnings suppressed via `-w`
-3. **B14** — `CMAKE_POLICY_VERSION_MINIMUM 3.10` — masks policy issues
+1. **B10** — mimalloc warnings suppressed via `-w`
+2. **B14** — `CMAKE_POLICY_VERSION_MINIMUM 3.10` — masks policy issues
+3. **B15** — `compile_commands.json` symlink — no fallback on non-Windows
 
 ---
 

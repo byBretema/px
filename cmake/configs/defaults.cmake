@@ -36,9 +36,6 @@ endif()
 # Set modules flags: -fmodules-ts -fmodule-mapper -fdeps-format
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
-# Export all symbols on Windows DLLs
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
 # Organized output dirs
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
