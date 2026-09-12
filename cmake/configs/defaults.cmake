@@ -24,7 +24,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # LTO on optimized builds
 if(CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$")
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT _ipo_supported OUTPUT _ipo_error)
+  if(_ipo_supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  else()
+    message(WARNING "IPO/LTO requested but not supported: ${_ipo_error}")
+  endif()
 endif()
 
 # Set modules flags: -fmodules-ts -fmodule-mapper -fdeps-format

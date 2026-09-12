@@ -44,6 +44,8 @@
 | B1  | `file(GLOB)` for source collection        | **Mitigated** | 2026-09-07 | `CONFIGURE_DEPENDS` stays. `cmake/utils/manifest.cmake` (107 lines: scan/write/read/check, uses logger helpers). `cmake/stale-check.cmake` (42 lines, raw message() for script mode). `check_manifest()` in CMakeLists.txt warns. `just stale-check` fatals. One diff function, two callers. Manifest renamed to `glob_manifest.txt`. |
 | B3  | Global `CMAKE_CXX_FLAGS=-O3`              | **Done**      | 2026-09-08 | Removed `DEPS_FORCE_OPTIMIZATION` option entirely. `DEPS_BUILD_TYPE=Release` already provides `-O3` via CMake's default `CMAKE_CXX_FLAGS_RELEASE`. Redundant and harmful — replaced entire `CMAKE_CXX_FLAGS` variable.                                                                                                                |
 | B4  | Global `CACHE FORCE` for OPTIONS          | **Done**      | 2026-09-08 | CACHE FORCE is the only mechanism to override dep-defined cache entries before `add_subdirectory`. Moved OPTIONS parsing before fetch guard. CMAKE_ARGS is a no-op for FetchContent `add_subdirectory` paths.                                                                                                                         |
+| B9  | LTO without `check_ipo_supported()`       | **Done**      | 2026-09-12 | `defaults.cmake:26-34` now calls `check_ipo_supported()` via `CheckIPOSupported` module. Warning (not fatal) on unsupported compilers.                                                                                                                                                                                               |
+| B11 | Hard-coded `-O3` override for deps        | **Done**      | 2026-09-08 | Removed in `a218e66` ("better flags +"). `importer.cmake` no longer contains `-O3` override.                                                                                                                                                                                                                                        |
 
 ### Key Decisions
 
@@ -59,11 +61,12 @@
 | #   | File Path                    | Lines | Delta |
 | --- | ---------------------------- | ----- | ----- |
 | 2   | `cmake/deps.cmake`           | 195   | +16   |
-| 5   | `cmake/utils/importer.cmake` | 228   | -88   |
+| 5   | `cmake/utils/importer.cmake` | 224   | -92   |
 | —   | `cmake/utils/manifest.cmake` | 107   | new   |
-| —   | `cmake/stale-check.cmake`    | 42    | new   |
+| —   | `cmake/stale-check.cmake`    | 41    | new   |
 | 14  | `CMakeLists.txt`             | 24    | +5    |
 | —   | `justfile`                   | 152   | +4    |
+| 7   | `cmake/configs/defaults.cmake` | 48  | +6    |
 
 All other files unchanged.
 
@@ -100,9 +103,9 @@ All other files unchanged.
 | B6  | `macro()` where `function()` would be safer                  | `scaffolding.cmake:26,48,73,87,92` | Medium              | Open                                                                                                                                                                                                        |
 | B7  | Warning flags set `PUBLIC` — leaks to consumers              | `warnings.cmake:95-99`             | **High** (for libs) | Open                                                                                                                                                                                                        |
 | B8  | `CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` — crutch                  | `defaults.cmake:34`                | Medium              | Open                                                                                                                                                                                                        |
-| B9  | LTO set without `check_ipo_supported()`                      | `defaults.cmake:26-28`             | **High**            | Open                                                                                                                                                                                                        |
+| B9  | ~~LTO set without `check_ipo_supported()`~~                    | ~~`defaults.cmake:26-28`~~         | ~~\*\*High~~\*\*    | **Resolved** — `defaults.cmake:26-34` now calls `check_ipo_supported()` via `CheckIPOSupported` module. Warning (not fatal) on unsupported compilers.                                                                                                                               |
 | B10 | mimalloc warnings suppressed via `-w`                        | `malloc.cmake:32-35`               | Low                 | Open                                                                                                                                                                                                        |
-| B11 | Hard-coded `-O3` override for all deps                       | `importer.cmake:217-223`           | Medium              | Open                                                                                                                                                                                                        |
+| B11 | ~~Hard-coded `-O3` override for all deps~~                    | ~~`importer.cmake:217-223`~~       | ~~Medium~~          | **Resolved** — Removed in `a218e66` ("better flags +"). Lines no longer contain `-O3` override.                                                                                                                                                                         |
 | B12 | `__base_dir` set CACHE INTERNAL then unset                   | `base.cmake:9,67`                  | Low                 | Open                                                                                                                                                                                                        |
 | B13 | `file(MAKE_DIRECTORY "$ENV{CCACHE_DIR}")` — no guard         | `cache.cmake:9`                    | Low                 | Open                                                                                                                                                                                                        |
 | B14 | `CMAKE_POLICY_VERSION_MINIMUM 3.10` — masks policy issues    | `importer.cmake:7-8`               | Low                 | Open                                                                                                                                                                                                        |
@@ -110,9 +113,9 @@ All other files unchanged.
 
 ### Top 3 Impact
 
-1. **B9** — LTO crash on unsupported compilers
-2. **B7** — warning flags leak to downstream consumers
-3. **B6** — macro scope leaks requiring CACHE INTERNAL workarounds
+1. **B7** — warning flags leak to downstream consumers
+2. **B6** — macro scope leaks requiring CACHE INTERNAL workarounds
+3. **B5** — `CACHE INTERNAL` state for target tracking
 
 ---
 
