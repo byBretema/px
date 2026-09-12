@@ -27,11 +27,17 @@ function(target_link_mimalloc target)
     return()
   endif()
 
-  # Silence mimalloc warnings
+  # Silence mimalloc warnings — targeted suppressions for C code
+  # under our strict warning set (Wconversion, Wsign-conversion, etc.)
   if(MSVC)
     target_compile_options(mimalloc PRIVATE /w)
   else()
-    target_compile_options(mimalloc PRIVATE -w)
+    target_compile_options(mimalloc PRIVATE
+      -Wno-conversion
+      -Wno-sign-conversion
+      -Wno-old-style-cast
+      -Wno-missing-prototypes
+      -Wno-implicit-fallthrough)
   endif()
 
   if(WIN32 AND MSVC)

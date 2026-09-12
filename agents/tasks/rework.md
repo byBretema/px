@@ -50,6 +50,7 @@
 | B6  | Macros leaked scope, required CACHE workaround | **Done**  | 2026-09-12 | All `make_*` macros + `setup_testing` converted to functions in `scaffolding.cmake`.                                                                                                                                                                                                                                                   |
 | B5  | CACHE INTERNAL for target tracking            | **Done**  | 2026-09-12 | CACHE INTERNAL is correct for cross-subdir state sharing. Resolved by B6 — functions eliminate scope leaks, cache usage is intentional.                                                                                                                                                                                                |
 | B8  | CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS              | **Done**  | 2026-09-12 | Removed. Dead code — no shared library targets in project.                                                                                                                                                                                                                                                                              |
+| B10 | mimalloc blanket -w suppression               | **Done**  | 2026-09-12 | Targeted `-Wno-*` flags replace blanket `-w`. MSVC `/w` retained.                                                                                                                                                                                                                                                                       |
 
 ### Key Decisions
 
@@ -108,7 +109,7 @@ All other files unchanged.
 | B7  | ~~Warning flags set `PUBLIC` — leaks to consumers~~            | ~~`warnings.cmake:95-99`~~         | ~~\*\*High\*\*~~    | **Resolved** — `warnings.cmake:94-100` changed `PUBLIC` → `PRIVATE` on all `target_compile_options` calls. Warning flags no longer leak to downstream consumers.                                                                                                                                                                            |
 | B8  | ~~`CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` — crutch~~               | ~~`defaults.cmake:34`~~            | ~~Medium~~          | **Resolved** — Removed `defaults.cmake:33-34`. Dead code: project has no shared library targets (`make_lib` never called). Only `make_hlib` (INTERFACE) and `make_test` (executable) are used.                                                                                                                                                |
 | B9  | ~~LTO set without `check_ipo_supported()`~~                    | ~~`defaults.cmake:26-28`~~         | ~~\*\*High~~\*\*    | **Resolved** — `defaults.cmake:26-34` now calls `check_ipo_supported()` via `CheckIPOSupported` module. Warning (not fatal) on unsupported compilers.                                                                                                                               |
-| B10 | mimalloc warnings suppressed via `-w`                        | `malloc.cmake:32-35`               | Low                 | Open                                                                                                                                                                                                        |
+| B10 | ~~mimalloc warnings suppressed via `-w`~~                      | ~~`malloc.cmake:32-35`~~           | ~~Low~~             | **Resolved** — `malloc.cmake:30-41` now uses targeted `-Wno-*` flags (`-Wno-conversion`, `-Wno-sign-conversion`, `-Wno-old-style-cast`, `-Wno-missing-prototypes`, `-Wno-implicit-fallthrough`) instead of blanket `-w`. MSVC `/w` retained (no granular equivalent).                                                                                                                                      |
 | B11 | ~~Hard-coded `-O3` override for all deps~~                    | ~~`importer.cmake:217-223`~~       | ~~Medium~~          | **Resolved** — Removed in `a218e66` ("better flags +"). Lines no longer contain `-O3` override.                                                                                                                                                                         |
 | B12 | `__base_dir` set CACHE INTERNAL then unset                   | `base.cmake:9,67`                  | Low                 | Open                                                                                                                                                                                                        |
 | B13 | `file(MAKE_DIRECTORY "$ENV{CCACHE_DIR}")` — no guard         | `cache.cmake:9`                    | Low                 | Open                                                                                                                                                                                                        |
@@ -117,9 +118,9 @@ All other files unchanged.
 
 ### Top 3 Impact
 
-1. **B10** — mimalloc warnings suppressed via `-w`
-2. **B14** — `CMAKE_POLICY_VERSION_MINIMUM 3.10` — masks policy issues
-3. **B15** — `compile_commands.json` symlink — no fallback on non-Windows
+1. **B14** — `CMAKE_POLICY_VERSION_MINIMUM 3.10` — masks policy issues
+2. **B15** — `compile_commands.json` symlink — no fallback on non-Windows
+3. **B12** — `__base_dir` set CACHE INTERNAL then unset
 
 ---
 
