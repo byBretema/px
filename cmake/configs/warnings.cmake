@@ -92,11 +92,11 @@ function(setup_warnings project_name)
   # Set the flags
 
   if(MSVC)
-    target_compile_options(${project_name} PUBLIC ${MSVC_OPTIONS} ${MSVC_WARNINGS})
+    target_compile_options(${project_name} PRIVATE ${MSVC_OPTIONS} ${MSVC_WARNINGS})
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${project_name} PUBLIC ${CLANG_WARNINGS})
+    target_compile_options(${project_name} PRIVATE ${CLANG_WARNINGS})
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${project_name} PUBLIC ${GCC_WARNINGS})
+    target_compile_options(${project_name} PRIVATE ${GCC_WARNINGS})
   endif()
 
 endfunction()

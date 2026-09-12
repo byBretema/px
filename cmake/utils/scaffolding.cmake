@@ -23,7 +23,7 @@ function(__glob_sources root_dir out_sources out_headers)
 endfunction()
 
 
-macro(make_exe name)
+function(make_exe name)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${name} ${_sources} ${_headers} ${ARGN})
@@ -42,10 +42,10 @@ macro(make_exe name)
   list(APPEND __export_targets ${name})
   set(__export_targets "${__export_targets}" CACHE INTERNAL "")
 
-endmacro()
+endfunction()
 
 
-macro(make_lib name type)
+function(make_lib name type)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_library(${name} ${type} ${_sources} ${_headers} ${ARGN})
@@ -67,10 +67,10 @@ macro(make_lib name type)
   list(APPEND __export_targets ${name})
   set(__export_targets "${__export_targets}" CACHE INTERNAL "")
 
-endmacro()
+endfunction()
 
 
-macro(make_lib_header_only name)
+function(make_lib_header_only name)
 
   add_library(${name} INTERFACE)
 
@@ -81,15 +81,15 @@ macro(make_lib_header_only name)
   list(APPEND __export_targets ${name})
   set(__export_targets "${__export_targets}" CACHE INTERNAL "")
 
-endmacro()
+endfunction()
 
 
-macro(make_hlib)
+function(make_hlib)
   make_lib_header_only(${ARGN})
-endmacro()
+endfunction()
 
 
-macro(make_test name)
+function(make_test name)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${name} ${_sources} ${_headers} ${ARGN})
@@ -107,15 +107,15 @@ macro(make_test name)
 
   add_test(NAME ${name} COMMAND ${name})
 
-endmacro()
+endfunction()
 
 
-macro(setup_testing)
+function(setup_testing)
   if(PROJECT_IS_TOP_LEVEL)
     log_header("Testing enabled")
     enable_testing()
   endif()
-endmacro()
+endfunction()
 
 
 function(setup_export)
