@@ -64,7 +64,4 @@ macro(post_project)
   set(CMAKE_DISABLE_SOURCE_CHANGES ON)
   set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
-  # Cleanup
-  unset(__base_dir)
-
 endmacro()
