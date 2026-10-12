@@ -19,12 +19,12 @@
 | B11 | Hard-coded `-O3` override for deps | **Done** | 2026-09-08 |
 | B12 | Dead `unset(__base_dir)` | **Done** | 2026-09-12 |
 | B13 | CCACHE_DIR unguarded mkdir | **Done** | 2026-09-12 |
-| B14 | `CMAKE_POLICY_VERSION_MINIMUM 3.10` | **Open** | — |
+| B14 | `CMAKE_POLICY_VERSION_MINIMUM 3.10` | **Done** | 2026-10-12 |
 | B15 | `compile_commands.json` symlink | **Done** | 2026-09-12 |
 
 ## Next
 
-- **B14** — Scope `CMAKE_POLICY_VERSION_MINIMUM` per-dep in `importer.cmake` (set/unset around `FetchContent_MakeAvailable`)
+- B1–B14 closed; no urgent audit items remain.
 
 ## Remaining (Low)
 

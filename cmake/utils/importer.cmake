@@ -4,7 +4,6 @@
 
 include(FetchContent)
 
-set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 
 set(FETCHCONTENT_BASE_DIR "${DEPS_DIR}")
@@ -210,7 +209,9 @@ function(import_dependency qualified_target)
     endif()
 
     log_level_to_notice()
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
     FetchContent_MakeAvailable(${fetch_id})
+    unset(CMAKE_POLICY_VERSION_MINIMUM)
     log_level_restore()
 
     # Restore parent build type
