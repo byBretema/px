@@ -2,8 +2,8 @@ set shell := ["bash", "-ceu"]
 
 # --- Options ---
 
-preset := 'debug'
-generator := 'Ninja'
+# Defaults to the last configured preset (see _active).
+preset := `p="$(sed -n 1p .build/active_preset 2>/dev/null || true)"; echo "${p:-debug}"`
 config_flags := '' # --fresh
 build_flags := '' # --clean-first
 cpu_usage := '80'
@@ -30,12 +30,11 @@ _num_of_jobs:
 _root := justfile_directory()
 
 _build_dir := _root / '.build'
+_active := _build_dir / 'active_preset'
 _cache_dir := _root / '.cache'
 
 _projects := `shopt -s nullglob; for d in projects/*/; do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 _tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
-
-_extra_config_flags := if path_exists(_build_dir) == "true" { "" } else { "--fresh" }
 
 # --- Env ---
 # Do not rename vars in this list they are used by CMake
@@ -68,9 +67,7 @@ _list_all:
 
 [private]
 config:
-    @cmake -E make_directory "{{ _build_dir }}"
-    @cmake -S "{{ _root }}" -B "{{ _build_dir }}" -G "{{ generator }}" \
-        --preset {{ preset }} {{ config_flags }} {{ _extra_config_flags }}
+    @cmake -S "{{ _root }}" --preset {{ preset }} {{ config_flags }}
 
 # --- Per target ---
 
@@ -82,13 +79,13 @@ build *targets: config
     cmake_args=()
     [[ -n "{{ build_flags }}" ]] && cmake_args+=({{ build_flags }})
     [[ -n "{{ targets }}"     ]] && cmake_args+=(--target {{ targets }})
-    cmake --build "{{ _build_dir }}" -j "$(just _num_of_jobs)" "${cmake_args[@]}"
+    cmake --build "$(sed -n 2p "{{ _active }}")" -j "$(just _num_of_jobs)" "${cmake_args[@]}"
 
 [no-exit-message]
 run target *args: (build target)
     #!/usr/bin/env bash
     set -eu; echo
-    bin="$(find "{{ _build_dir }}" -type f -name "{{ target }}" -perm -u+x 2>/dev/null | head -1)"
+    bin="$(find "$(sed -n 2p "{{ _active }}")" -type f -name "{{ target }}" -perm -u+x 2>/dev/null | head -1)"
     if [[ -z "$bin" ]]; then
         echo "no executable found for target '{{ target }}'"
         exit 1
@@ -96,15 +93,14 @@ run target *args: (build target)
     "$bin" {{ args }}
 
 # list... / empty == all
-test *tests:
+test *tests: (build tests)
     #!/usr/bin/env bash
-    set -eu; echo; echo "Building & running tests..."
-    just build "{{ tests }}"
+    set -eu; echo
     regex=""
     if [[ -n "{{ tests }}" ]]; then
         regex="^({{ replace(tests, ' ', '|') }})$"
     fi
-    args=(--test-dir "{{ _build_dir }}" --output-on-failure --parallel 8 -C {{ preset }})
+    args=(--test-dir "$(sed -n 2p "{{ _active }}")" --output-on-failure --parallel 8)
     if [[ -n "$regex" ]]; then
         args+=(-R "$regex")
     fi
@@ -114,7 +110,7 @@ test *tests:
 
 # Check for stale glob-manifest (CI gate).
 stale-check:
-    @cmake -P "{{ _root }}/cmake/stale-check.cmake" "{{ _build_dir }}"
+    @cmake -P "{{ _root }}/cmake/stale-check.cmake" "$(sed -n 2p "{{ _active }}")"
 
 # all / build / deps
 clean target="build":

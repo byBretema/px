@@ -30,12 +30,14 @@ Each of these breaks a common workflow today.
 - [x] **C7 `USE_MIMALLOC=ON` fails configure** (Fixed 2026-10-15) — `cmake/configs/malloc.cmake:6`
   - `import_dependency(mimalloc::mimalloc ...)` has no `SUBDIR`; `import_dependency` fatals with `SUBDIR is required`.
   - Fix: add `SUBDIR include`.
-- [ ] **C30 No tests are registered; `just test` runs nothing** (Verified) — `cmake/utils/scaffolding.cmake:113`
+- [x] **C30 No tests are registered; `just test` runs nothing** (Fixed 2026-10-15: `setup_testing` is a macro) — `cmake/utils/scaffolding.cmake:113`
   - `enable_testing()` inside `function(setup_testing)` sets `CMAKE_TESTING_ENABLED` in function scope only, so no `CTestTestfile.cmake` is generated (`Total Tests: 0`). Regression from B6 (macros to functions).
   - Fix: make `setup_testing` a `macro()`, or call `enable_testing()` directly in the top-level `CMakeLists.txt`.
-- [ ] **C8 Preset options stick between presets** (Verified) — `CMakePresets.json`, `justfile:70`
-  - All presets share `.build/`; `just preset=debug-asan build` then `just build` keeps `ENABLE_ASAN=ON` because `debug` never sets it.
-  - Fix: `base` preset sets every option explicitly (`ENABLE_ASAN/UBSAN/FORCE_ERROR = OFF`), or use per-preset build dirs (`.build/${presetName}`).
+- [x] **C8 Preset options stick between presets** (Fixed 2026-10-15)
+  - `base` preset resets `ENABLE_ASAN`, `ENABLE_UBSAN`, `FORCE_ERROR`; each preset sets what it varies.
+  - Build dirs per group: `.build/{debug,profile,release}` and `*_san` for any sanitizer combo. `profile` = `RelWithDebInfo` (new).
+  - Dep build trees moved to `<build>/_deps/`; only sources are shared in `.deps/`. `DEPS_DIR` default is now `<source>/.deps`.
+  - CMake writes `.build/active_preset` (preset, binary dir); `just` defaults to it.
 
 ## Correctness — Medium
 
@@ -90,8 +92,6 @@ Each of these breaks a common workflow today.
   - `git clone --branch` fails for commit-hash tags; `PATCH` undocumented in the header comment. `GIT_SHALLOW TRUE` also fails for hashes.
 - [ ] **C27 justfile nits**
   - `_list_all` calls missing recipe `_list_base` (`just list all` fails).
-  - `ctest -C {{ preset }}` passes a preset name as a config.
-  - `--fresh` when `.build` is absent is a no-op.
   - `run` uses `find -perm -u+x` (no Windows).
 - [ ] **C28 Docs drift in comments** — `warnings.cmake:11` (`/Zc:preprocessor` is not two-phase lookup; that's `/permissive-`), `defaults.cmake:36` (says "Set modules flags" but disables scanning), `-Wno-float-equal` / `-Wno-c++98-compat*` disable warnings that are never enabled.
 - [ ] **C29 Every target links every dep** — `all_dependencies`
@@ -106,7 +106,7 @@ Each of these breaks a common workflow today.
 - [ ] **MF5** Minimum compiler version validation
 - [ ] **MF6** Multi-config generator handling (`CMAKE_BUILD_TYPE` checks, compile_commands, ctest `-C`)
 - [ ] **MF7** `try_compile` / C++20 feature validation
-- [ ] **MF8** CI presets: `buildPresets`, `testPresets`, generator in presets (justfile passes `-G` instead)
+- [ ] **MF8** CI presets: `buildPresets`, `testPresets` (generator now in presets)
 - [ ] **MF9** `find_package` fallback for system deps (ref: `CPMFindPackage`, FetchContent `FIND_PACKAGE_ARGS`)
 - [ ] **MF10** `target_compile_features(cxx_std_20)` instead of global `CMAKE_CXX_STANDARD`
 - [ ] **MF11** Opt-in local packages (ref: `CPM_USE_LOCAL_PACKAGES`); overlaps MF9
@@ -117,12 +117,12 @@ Each of these breaks a common workflow today.
 ## Tooling / AI friendliness
 
 - [ ] **T1** `.clang-format` matching current style (2-space, attached braces), so style rules are enforced, not described.
-- [ ] **T2** CI workflow: configure + build + `ctest` on `debug-strict` and `debug-sanitizers` (needs C1, C8 first).
+- [ ] **T2** CI workflow: configure + build + `ctest` on `debug-strict` and `debug-sanitizers` (C1, C8 done).
 
 ## Suggested order
 
-1. ~~C1, C2, C7~~, C30 (one-liners that unblock basic use)
-2. C8, C4, C10 (dev-loop correctness)
+1. ~~C1, C2, C7, C30~~ (one-liners that unblock basic use)
+2. ~~C8~~, C4, C10 (dev-loop correctness)
 3. C3, C5, C6, C14 (install/export story)
 4. C9, C11, C13 (strict warnings actually usable)
 5. Rest, then MF items

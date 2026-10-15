@@ -110,12 +110,14 @@ function(make_test name)
 endfunction()
 
 
-function(setup_testing)
+# Macro, not function: enable_testing() sets CMAKE_TESTING_ENABLED in the
+# current scope, which a function would drop on return (no tests registered).
+macro(setup_testing)
   if(PROJECT_IS_TOP_LEVEL)
     log_header("Testing enabled")
     enable_testing()
   endif()
-endfunction()
+endmacro()
 
 
 function(setup_export)

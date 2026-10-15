@@ -27,7 +27,7 @@ set(DEPS_DIR        "$ENV{DEPS_DIR}" CACHE PATH   "Directory where FetchContent 
 set(DEPS_BUILD_TYPE "Release"        CACHE STRING "Build type for FetchContent dependencies"            )
 
 if(NOT DEPS_DIR)
-  set(DEPS_DIR "${CMAKE_BINARY_DIR}/.deps" CACHE PATH "" FORCE)
+  set(DEPS_DIR "${CMAKE_SOURCE_DIR}/.deps" CACHE PATH "" FORCE)
 endif()
 
 

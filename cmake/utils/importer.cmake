@@ -149,6 +149,9 @@ function(import_dependency qualified_target)
       GIT_TAG        ${ARG_TAG}
       GIT_SHALLOW    TRUE
       SYSTEM         TRUE
+      # Sources are shared across build dirs; build trees must not be.
+      BINARY_DIR     "${CMAKE_BINARY_DIR}/_deps/${fetch_id}-build"
+      SUBBUILD_DIR   "${CMAKE_BINARY_DIR}/_deps/${fetch_id}-subbuild"
       CMAKE_ARGS     ${_dep_cmake_args}
     )
 

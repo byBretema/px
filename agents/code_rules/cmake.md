@@ -23,7 +23,7 @@
 
 ## Functions
 
-- Prefer `function()`; `macro()` only when the caller's scope must be modified (`pre_project`, `post_project`, logger)
+- Prefer `function()`; `macro()` only when the caller's scope must be modified (`pre_project`, `post_project`, `setup_testing`, logger)
 - `snake_case`: `setup_warnings`, `setup_sanitizers`, `import_dependency`
 - Internal: double-underscore prefix: `__glob_sources`, `__add_dependency`
 - Output vars: `out_var` pattern with `PARENT_SCOPE`
@@ -49,7 +49,7 @@
 - All deps through `import_dependency()` (FetchContent wrapper)
 - `FetchContent_Declare` + `FetchContent_MakeAvailable`
 - `GIT_SHALLOW TRUE` + `SYSTEM TRUE`
-- Deps dir: `DEPS_DIR` (env or cache), default `${CMAKE_BINARY_DIR}/.deps`; `just` exports `<root>/.deps`
+- Deps dir: `DEPS_DIR` (env or cache), default `${CMAKE_SOURCE_DIR}/.deps`; sources only, dep build trees in `<build>/_deps/`
 - `all_dependencies` aggregate INTERFACE target
 
 ## Defaults
@@ -59,7 +59,7 @@
 | Symbol visibility | `hidden` |
 | PIC | `ON` |
 | LTO | `ON` for Release/RelWithDebInfo, if `check_ipo_supported()` |
-| Build output | `.build/` (justfile); presets alone use `build/<preset>` |
+| Build output | `.build/<debug\|profile\|release>[_san]` (presets) |
 | Deps dir | `.deps/` |
-| Generator | Ninja (justfile `-G`; presets set none) |
+| Generator | Ninja (presets) |
 | Default build type | `Release` |

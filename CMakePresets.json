@@ -4,72 +4,114 @@
     {
       "hidden": true,
       "name": "base",
-      "binaryDir": "${sourceDir}/build/${presetName}"
+      "generator": "Ninja",
+      "cacheVariables": {
+        "ACTIVE_PRESET": "${presetName}",
+        "ENABLE_ASAN": "OFF",
+        "ENABLE_UBSAN": "OFF",
+        "FORCE_ERROR": "OFF"
+      }
     },
     {
       "hidden": true,
       "name": "dbg",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+      "binaryDir": "${sourceDir}/.build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "hidden": true,
+      "name": "dbg_san",
+      "inherits": [
+        "dbg"
+      ],
+      "binaryDir": "${sourceDir}/.build/debug_san"
+    },
+    {
+      "hidden": true,
+      "name": "prof",
+      "binaryDir": "${sourceDir}/.build/profile",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "hidden": true,
+      "name": "prof_san",
+      "inherits": [
+        "prof"
+      ],
+      "binaryDir": "${sourceDir}/.build/profile_san"
     },
     {
       "hidden": true,
       "name": "rel",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "binaryDir": "${sourceDir}/.build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "hidden": true,
+      "name": "rel_san",
+      "inherits": [
+        "rel"
+      ],
+      "binaryDir": "${sourceDir}/.build/release_san"
     },
     {
       "hidden": true,
       "name": "werror",
-      "cacheVariables": { "FORCE_ERROR": "ON" }
+      "cacheVariables": {
+        "FORCE_ERROR": "ON"
+      }
     },
     {
       "hidden": true,
       "name": "asan",
-      "cacheVariables": { "ENABLE_ASAN": "ON" }
+      "cacheVariables": {
+        "ENABLE_ASAN": "ON"
+      }
     },
     {
       "hidden": true,
       "name": "ubsan",
-      "cacheVariables": { "ENABLE_UBSAN": "ON" }
+      "cacheVariables": {
+        "ENABLE_UBSAN": "ON"
+      }
     },
     {
       "hidden": true,
       "name": "san",
-      "inherits": ["asan", "ubsan"]
+      "inherits": [
+        "asan",
+        "ubsan"
+      ]
     },
-
-    { "name": "debug", "inherits": ["base", "dbg"] },
-    { "name": "debug-strict", "inherits": ["base", "dbg", "werror"] },
-    { "name": "debug-asan", "inherits": ["base", "dbg", "asan"] },
-    { "name": "debug-ubsan", "inherits": ["base", "dbg", "ubsan"] },
-    { "name": "debug-sanitizers", "inherits": ["base", "dbg", "san"] },
-    {
-      "name": "debug-asan-strict",
-      "inherits": ["base", "dbg", "asan", "werror"]
-    },
-    {
-      "name": "debug-ubsan-strict",
-      "inherits": ["base", "dbg", "ubsan", "werror"]
-    },
-    {
-      "name": "debug-sanitizers-strict",
-      "inherits": ["base", "dbg", "san", "werror"]
-    },
-    { "name": "release", "inherits": ["base", "rel"] },
-    { "name": "release-strict", "inherits": ["base", "rel", "werror"] },
-    { "name": "release-asan", "inherits": ["base", "rel", "asan"] },
-    { "name": "release-ubsan", "inherits": ["base", "rel", "ubsan"] },
-    { "name": "release-sanitizers", "inherits": ["base", "rel", "san"] },
-    {
-      "name": "release-asan-strict",
-      "inherits": ["base", "rel", "asan", "werror"]
-    },
-    {
-      "name": "release-ubsan-strict",
-      "inherits": ["base", "rel", "ubsan", "werror"]
-    },
-    {
-      "name": "release-sanitizers-strict",
-      "inherits": ["base", "rel", "san", "werror"]
-    }
+    {"name": "debug", "inherits": ["dbg", "base"]},
+    {"name": "debug-asan", "inherits": ["asan", "dbg_san", "base"]},
+    {"name": "debug-ubsan", "inherits": ["ubsan", "dbg_san", "base"]},
+    {"name": "debug-sanitizers", "inherits": ["san", "dbg_san", "base"]},
+    {"name": "debug-strict", "inherits": ["werror", "dbg", "base"]},
+    {"name": "debug-asan-strict", "inherits": ["asan", "werror", "dbg_san", "base"]},
+    {"name": "debug-ubsan-strict", "inherits": ["ubsan", "werror", "dbg_san", "base"]},
+    {"name": "debug-sanitizers-strict", "inherits": ["san", "werror", "dbg_san", "base"]},
+    {"name": "profile", "inherits": ["prof", "base"]},
+    {"name": "profile-asan", "inherits": ["asan", "prof_san", "base"]},
+    {"name": "profile-ubsan", "inherits": ["ubsan", "prof_san", "base"]},
+    {"name": "profile-sanitizers", "inherits": ["san", "prof_san", "base"]},
+    {"name": "profile-strict", "inherits": ["werror", "prof", "base"]},
+    {"name": "profile-asan-strict", "inherits": ["asan", "werror", "prof_san", "base"]},
+    {"name": "profile-ubsan-strict", "inherits": ["ubsan", "werror", "prof_san", "base"]},
+    {"name": "profile-sanitizers-strict", "inherits": ["san", "werror", "prof_san", "base"]},
+    {"name": "release", "inherits": ["rel", "base"]},
+    {"name": "release-asan", "inherits": ["asan", "rel_san", "base"]},
+    {"name": "release-ubsan", "inherits": ["ubsan", "rel_san", "base"]},
+    {"name": "release-sanitizers", "inherits": ["san", "rel_san", "base"]},
+    {"name": "release-strict", "inherits": ["werror", "rel", "base"]},
+    {"name": "release-asan-strict", "inherits": ["asan", "werror", "rel_san", "base"]},
+    {"name": "release-ubsan-strict", "inherits": ["ubsan", "werror", "rel_san", "base"]},
+    {"name": "release-sanitizers-strict", "inherits": ["san", "werror", "rel_san", "base"]}
   ]
 }

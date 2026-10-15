@@ -19,6 +19,12 @@ macro(pre_project)
 
   set(__pre_project_invoked ON CACHE INTERNAL "'pre_project' invoked correctly")
 
+  # Set by CMakePresets.json. Lets tools (justfile) reuse the last configured
+  # preset and find its build dir: line 1 = preset, line 2 = binary dir.
+  if(ACTIVE_PRESET)
+    file(WRITE "${CMAKE_SOURCE_DIR}/.build/active_preset" "${ACTIVE_PRESET}\n${CMAKE_BINARY_DIR}\n")
+  endif()
+
 endmacro()
 
 
