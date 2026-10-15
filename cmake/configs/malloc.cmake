@@ -6,6 +6,7 @@ if(USE_MIMALLOC)
   import_dependency(mimalloc::mimalloc
     GITHUB      microsoft/mimalloc
     TAG         v3.5.0
+    SUBDIR      include
     BUILD_TYPE  Release
     OPTIONS     MI_BUILD_SHARED=ON
                 MI_BUILD_STATIC=OFF

@@ -140,7 +140,7 @@ add_exe name:
     @mkdir -p "{{ _root }}/projects/{{ name }}"
     @printf 'make_exe({{ name }})\n' > "{{ _root }}/projects/{{ name }}/CMakeLists.txt"
     @printf 'int main() {\n    return 0;\n}\n' > "{{ _root }}/projects/{{ name }}/main.cpp"
-    @if ! grep -qF "add_subdirectory({{ name }})" "{{ _root }}/projects/CMakeLists.txt"; then echo "add_subdirectory({{ name }})\n" >> "{{ _root }}/projects/CMakeLists.txt"; fi
+    @if ! grep -qF "add_subdirectory({{ name }})" "{{ _root }}/projects/CMakeLists.txt"; then printf 'add_subdirectory({{ name }})\n' >> "{{ _root }}/projects/CMakeLists.txt"; fi
     @echo "created exe: {{ name }}"
 
 # SHARED / STATIC
@@ -151,5 +151,5 @@ add_lib name type="SHARED":
     @printf 'make_lib({{ name }} {{ type }})\n' > "{{ _root }}/projects/{{ name }}/CMakeLists.txt"
     @printf '#pragma once\n\nnamespace {{ name }} {\n}\n' > "{{ _root }}/projects/{{ name }}/{{ name }}.hpp"
     @printf '#include "{{ name }}.hpp"\n' > "{{ _root }}/projects/{{ name }}/{{ name }}.cpp"
-    @if ! grep -qF "add_subdirectory({{ name }})" "{{ _root }}/projects/CMakeLists.txt"; then echo "add_subdirectory({{ name }})\n" >> "{{ _root }}/projects/CMakeLists.txt"; fi
+    @if ! grep -qF "add_subdirectory({{ name }})" "{{ _root }}/projects/CMakeLists.txt"; then printf 'add_subdirectory({{ name }})\n' >> "{{ _root }}/projects/CMakeLists.txt"; fi
     @echo "created lib: {{ name }} ({{ type }})"

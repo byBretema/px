@@ -3,6 +3,7 @@
 ## Standard
 
 - C++20 (`CMAKE_CXX_STANDARD 20`, extensions off, required)
+- Note: glaze currently raises every target to C++23 (see `agents/tasks/improvements.md` C11); do not rely on C++23 features
 
 ## Header guards
 
@@ -13,7 +14,6 @@
 - `snake_case` functions, variables, parameters
 - `PascalCase` structs/classes
 - `m_` prefix for private members
-- Double-underscore prefix for internal CMake functions (not C++)
 
 ## Types
 
@@ -42,16 +42,10 @@
 
 ## Formatting
 
-- 4-space indent
-- Opening brace on same line
-- K&R / Allman hybrid
+- 2-space indent
+- Opening brace on same line (attached)
 
 ## Compiler warnings
 
-- `-Wall -Wextra -Wpedantic` plus:
-  - `-Wconversion -Wsign-conversion -Wshadow`
-  - `-Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused`
-  - `-Woverloaded-virtual -Wnull-dereference -Wformat=2 -Wundef`
-  - `-Wdouble-promotion -Wimplicit-fallthrough -Wno-float-equal`
-- GCC adds: `-Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wuseless-cast`
-- Clang adds: `-Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-language-extension-token`
+- Source of truth: `cmake/configs/warnings.cmake` (GCC, Clang, MSVC sets)
+- Code must build clean under the `debug-strict` preset (warnings as errors)

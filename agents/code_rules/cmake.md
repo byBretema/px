@@ -21,20 +21,23 @@
   - `FORCE_*` — force behavior (warnings as errors)
 - Local: `snake_case` or `_` prefix
 
-## Functions / Macros
+## Functions
 
+- Prefer `function()`; `macro()` only when the caller's scope must be modified (`pre_project`, `post_project`, logger)
 - `snake_case`: `setup_warnings`, `setup_sanitizers`, `import_dependency`
 - Internal: double-underscore prefix: `__glob_sources`, `__add_dependency`
 - Output vars: `out_var` pattern with `PARENT_SCOPE`
 
 ## Scaffolding DSL
 
-| Macro | Purpose |
+| Function | Purpose |
 |---|---|
 | `make_exe(name)` | Executable, auto-glob, link deps, warnings/sanitizers |
 | `make_lib(name type)` | Shared/static lib, same pattern |
-| `make_hlib(name)` | Header-only interface library |
-| `make_test(name)` | Like `make_exe` + `add_test()` |
+| `make_hlib(name)` | Header-only interface library (alias of `make_lib_header_only`) |
+| `make_test(name)` | Like `make_exe` + `add_test()`, not exported |
+
+- Sources: non-recursive glob of `*.cpp *.cc *.c *.cxx` + headers in the target dir
 
 ## Modules
 
@@ -46,7 +49,7 @@
 - All deps through `import_dependency()` (FetchContent wrapper)
 - `FetchContent_Declare` + `FetchContent_MakeAvailable`
 - `GIT_SHALLOW TRUE` + `SYSTEM TRUE`
-- Deps cached in `.deps/` via `FETCHCONTENT_BASE_DIR`
+- Deps dir: `DEPS_DIR` (env or cache), default `${CMAKE_BINARY_DIR}/.deps`; `just` exports `<root>/.deps`
 - `all_dependencies` aggregate INTERFACE target
 
 ## Defaults
@@ -55,8 +58,8 @@
 |---|---|
 | Symbol visibility | `hidden` |
 | PIC | `ON` |
-| LTO | `ON` for Release/RelWithDebInfo |
-| Build output | `.build/` |
+| LTO | `ON` for Release/RelWithDebInfo, if `check_ipo_supported()` |
+| Build output | `.build/` (justfile); presets alone use `build/<preset>` |
 | Deps dir | `.deps/` |
-| Generator | Ninja |
+| Generator | Ninja (justfile `-G`; presets set none) |
 | Default build type | `Release` |
