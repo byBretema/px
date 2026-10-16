@@ -49,17 +49,16 @@ function(setup_warnings project_name)
     -Wconversion
     -Wsign-conversion
     -Wshadow
-    -Wnon-virtual-dtor
-    -Wold-style-cast
     -Wcast-align
     -Wunused
-    -Woverloaded-virtual
     -Wnull-dereference
     -Wformat=2
     -Wundef
     -Wdouble-promotion
     -Wimplicit-fallthrough
     -Wno-float-equal
+    # C++ only: GCC rejects these for C sources ("valid for C++ but not for C")
+    $<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor;-Wold-style-cast;-Woverloaded-virtual>
   )
 
   # Clang only
@@ -79,7 +78,7 @@ function(setup_warnings project_name)
     -Wduplicated-cond
     -Wduplicated-branches
     -Wlogical-op
-    -Wuseless-cast
+    $<$<COMPILE_LANGUAGE:CXX>:-Wuseless-cast>
     -Wno-strict-aliasing
   )
 

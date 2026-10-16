@@ -44,9 +44,8 @@ Each of these breaks a common workflow today.
 
 ## Correctness — Medium
 
-- [ ] **C9 Dep headers not treated as system** (Verified) — `cmake/utils/importer.cmake:31`
-  - Wrapper INTERFACE target lives in the caller's directory, so `SYSTEM TRUE` does not apply; own targets get `-I`, not `-isystem`. With the strict warning set and `FORCE_ERROR`, any dep header warning breaks the build.
-  - Fix: `target_include_directories(... SYSTEM INTERFACE ...)`.
+- [x] **C9 Dep headers not treated as system** (Fixed 2026-10-16)
+  - Wrapper include dirs are `SYSTEM INTERFACE`. Verified: a target including one header of every dep under `debug-strict` went from 139 errors (sign-conversion, old-style-cast, conversion, useless-cast, undef) to 0, GCC and Clang.
 - [x] **C10 Global defaults don't reach dependencies** (Fixed 2026-10-16)
   - New "Toolchain" stage before deps: `cache.cmake`, `linker.cmake`, `global.cmake` (PIC + output dirs). Deps now get ccache, mold, `-fPIC` (static deps link into SHARED libs), and `bin/`/`lib/` outputs.
 - [ ] **C11 Project builds as C++23, not C++20** (Verified)
@@ -55,9 +54,8 @@ Each of these breaks a common workflow today.
 - [ ] **C12 `CCACHE_DIR` has no effect at build time** (Inspected) — `cmake/configs/cache.cmake:10`
   - `set(ENV{...})` only lives during configure; ninja-launched ccache uses the shell env. Works via `just` only because the justfile exports it.
   - Fix: launcher `${CMAKE_COMMAND} -E env CCACHE_DIR=... ${__ccache_found}`, or drop the CMake-side default.
-- [ ] **C13 C++-only warnings applied to C sources** (Inspected) — `cmake/configs/warnings.cmake:45`
-  - Globs include `*.c`; GCC warns `-Wold-style-cast`/`-Wnon-virtual-dtor`/`-Woverloaded-virtual`/`-Wuseless-cast` are "valid for C++ but not for C".
-  - Fix: wrap C++-only flags in `$<$<COMPILE_LANGUAGE:CXX>:...>`.
+- [x] **C13 C++-only warnings applied to C sources** (Fixed 2026-10-16)
+  - `-Wnon-virtual-dtor`, `-Wold-style-cast`, `-Woverloaded-virtual`, `-Wuseless-cast` wrapped in `$<$<COMPILE_LANGUAGE:CXX>:...>`. Verified: a `.c` file in a target no longer triggers "valid for C++/ObjC++ but not for C".
 - [x] **C14 Generated Config.cmake lacks `find_dependency`** (Fixed 2026-10-16)
   - `include(CMakeFindDependencyMacro)` when `DEPS` given, `check_required_components(<ns>)`, dropped the redundant `_FOUND`. Verified with `setup_export(DEPS Threads)`.
 - [x] **C15 Fetch guard is dead code** (Fixed 2026-10-16, with C4: guard, `CMAKE_ARGS`, `CMP0135` removed)
@@ -136,7 +134,7 @@ Each of these breaks a common workflow today.
 1. ~~C1, C2, C7, C30~~ (one-liners that unblock basic use)
 2. ~~C8, C4, C10~~ (dev-loop correctness)
 3. ~~C3, C5, C6, C14~~ (install/export story); follow-ups C32, C33
-4. C9, C11, C13 (strict warnings actually usable)
+4. ~~C9, C13~~, C11 (strict warnings actually usable; C11 needs a decision)
 5. Rest, then MF items
 
 ## Key decisions (kept from `rework.md`)

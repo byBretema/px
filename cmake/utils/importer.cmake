@@ -117,7 +117,9 @@ macro(__add_dependency namespace target fetch_id subdir)
     endforeach()
 
     add_library(${namespace}_${target} INTERFACE)
-    target_include_directories(${namespace}_${target} INTERFACE
+    # SYSTEM: this wrapper lives in the caller's directory, so FetchContent's
+    # SYSTEM does not cover it; without it dep headers trip our warnings.
+    target_include_directories(${namespace}_${target} SYSTEM INTERFACE
       "${${fetch_id}_SOURCE_DIR}/${subdir}")
 
     # Link compiled targets (skip INTERFACE — headers only).
