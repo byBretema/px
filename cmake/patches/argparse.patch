@@ -1,0 +1,10 @@
+diff --git a/include/argparse/argparse.hpp b/include/argparse/argparse.hpp
+index e73da42..6c05a4c 100644
+--- a/include/argparse/argparse.hpp
++++ b/include/argparse/argparse.hpp
+@@ -2586,3 +2586,5 @@ protected:
+ };
+ 
+ } // namespace argparse
++
++#define PX_PATCHED_ARGPARSE 1

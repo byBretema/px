@@ -13,9 +13,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-# Static libraries are PIC, linkable into shared ones
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 # NOTE: CMAKE_DEBUG_POSTFIX is intentionally omitted. It conflicts with
 # DEPS_BUILD_TYPE forcing different build types per dependency — in single-config
 # generators the consuming target resolves library paths using the global
@@ -35,11 +32,6 @@ endif()
 
 # Set modules flags: -fmodules-ts -fmodule-mapper -fdeps-format
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-
-# Organized output dirs
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # Includes
 include(GNUInstallDirs)

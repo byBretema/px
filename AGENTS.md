@@ -5,7 +5,7 @@
 ## Layout
 
 - `CMakeLists.txt`: entry point. `pre_project()` / `project()` / `post_project()`, then `projects/`, `tests/`, export.
-- `cmake/base.cmake`: `post_project()` include order (options, deps, defaults, cache, linker, warnings, sanitizers).
+- `cmake/base.cmake`: `post_project()` include order: options, toolchain (ccache, mold, `global.cmake`), deps, defaults, warnings, sanitizers.
 - `cmake/deps.cmake`: every external dependency, one `import_dependency()` call each.
 - `cmake/utils/importer.cmake`: `import_dependency()` (FetchContent wrapper) and the `all_dependencies` target.
 - `cmake/utils/scaffolding.cmake`: `make_exe`, `make_lib`, `make_hlib`, `make_test`, `setup_testing`, `setup_export`.
@@ -37,7 +37,7 @@ Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --t
 ## Verify
 
 - Configure + build + test with `debug-strict` (warnings as errors) and `debug-sanitizers` after CMake or C++ changes.
-- Read the configure log: the wrapper prints a section per stage (`Fulfilling dependencies`, `Setup`, `Export`).
+- Read the configure log: the wrapper prints a section per stage (`Toolchain`, `Fulfilling dependencies`, `Setup`, `Export`).
 
 ## Gotchas
 
@@ -45,7 +45,8 @@ Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --t
 - `compile_commands.json` reaches the source root via the `compile_commands` target (part of `ALL`). `cmake --build --target <x>` alone does not refresh it.
 - Build dir groups: `.build/<debug|profile|release>[_san]`. Presets in the same group (e.g. `debug`/`debug-strict`, `debug-asan`/`debug-ubsan`) share a dir and rebuild when switched.
 - `.build/active_preset` (written by CMake at configure): line 1 preset, line 2 build dir.
-- Global defaults (visibility, warnings, LTO) apply to own targets only, not deps.
+- ccache, mold, PIC, output dirs apply to deps too; visibility, warnings, LTO, C++ standard apply to own targets only.
+- Changing a dep's URL, `TAG` or `PATCH` file re-fetches that dep on next configure; no `just clean deps` needed. A re-fetch refuses to wipe local edits in `.deps/<id>-src`; the error prints the commands to capture them as `cmake/patches/<ns>.patch` (see `cmake/patches/README.md`).
 - glaze forces `cxx_std_23` on every target through `all_dependencies`.
 
 ## Code rules

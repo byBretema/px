@@ -47,9 +47,11 @@
 ## Dependencies
 
 - All deps through `import_dependency()` (FetchContent wrapper)
-- `FetchContent_Declare` + `FetchContent_MakeAvailable`
-- `GIT_SHALLOW TRUE` + `SYSTEM TRUE`
+- Sources: importer does a shallow `git fetch <TAG>` into `DEPS_DIR/<id>-src`; `<id>.stamp` (`URL@TAG` + PATCH hash) triggers re-fetch on any change
+- Patches: `cmake/patches/<dep>.patch` (git diff, preferred) or `<dep>.cmake` (script); format and workflow in `cmake/patches/README.md`
+- `FetchContent_Declare(SOURCE_DIR ... SYSTEM)` + `FetchContent_MakeAvailable` for `add_subdirectory` only
 - Deps dir: `DEPS_DIR` (env or cache), default `${CMAKE_SOURCE_DIR}/.deps`; sources only, dep build trees in `<build>/_deps/`
+- Toolchain settings (ccache, mold, PIC, output dirs) are set before deps so they apply to them
 - `all_dependencies` aggregate INTERFACE target
 
 ## Defaults

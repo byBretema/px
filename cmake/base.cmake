@@ -51,18 +51,23 @@ macro(post_project)
   include(${__base_dir}/configs/options.cmake)
   include(${__base_dir}/configs/compile_commands.cmake)
 
-  # 2. Deps
+  # 2. Toolchain: must precede deps so they inherit it
+  log_header("Toolchain")
+
+  include(${__base_dir}/configs/cache.cmake)
+  include(${__base_dir}/configs/linker.cmake)
+  include(${__base_dir}/configs/global.cmake)
+
+  # 3. Deps
   log_header("Fulfilling dependencies")
 
   include(${__base_dir}/deps.cmake)
   include(${__base_dir}/configs/malloc.cmake)
 
-  # 3. Project setup
+  # 4. Project setup: own targets only
   log_header("Setup")
 
   include(${__base_dir}/configs/defaults.cmake)
-  include(${__base_dir}/configs/cache.cmake)
-  include(${__base_dir}/configs/linker.cmake)
   include(${__base_dir}/configs/warnings.cmake)
   include(${__base_dir}/configs/sanitizers.cmake)
   include(${__base_dir}/utils/manifest.cmake)

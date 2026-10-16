@@ -67,6 +67,7 @@ import_dependency(utfcpp::utfcpp
   GITHUB    nemtrif/utfcpp
   TAG       v4.0.6
   SUBDIR    source
+  PATCH     ${CMAKE_CURRENT_LIST_DIR}/patches/utfcpp.cmake
 )
 
 #-------------------------------------------------------------------------------
@@ -76,6 +77,7 @@ import_dependency(argparse::argparse
   GITHUB    p-ranav/argparse
   TAG       v3.2
   SUBDIR    include
+  PATCH     ${CMAKE_CURRENT_LIST_DIR}/patches/argparse.patch
 )
 
 #-------------------------------------------------------------------------------

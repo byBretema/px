@@ -3,13 +3,102 @@
 #-------------------------------------------------------------------------------
 
 include(FetchContent)
+find_package(Git REQUIRED)
 
-set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
-
-set(FETCHCONTENT_BASE_DIR "${DEPS_DIR}")
+# Sources live in DEPS_DIR (shared across build dirs, managed below);
+# FetchContent state and build trees stay per build dir. Nested
+# FetchContent calls made by deps themselves also land here.
+set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/_deps")
 set(FETCHCONTENT_QUIET ON)
 
 add_library(all_dependencies INTERFACE)
+
+# Fetches `ref` of `url` into `dir`, applying `patch` if given: a .patch/.diff
+# file goes through `git apply`, anything else is included as a CMake script.
+# The fetched commit is tagged `px-base` so `git diff px-base` yields a patch.
+# Works in `dir`.tmp and swaps it in only when complete, so an interrupted or
+# failed fetch never leaves a half-made `dir`. Shallow `git fetch <ref>` works
+# for tags, branches and commit SHAs, unlike `git clone --branch`.
+# Submodules are not fetched (current deps only use them for docs/tests).
+function(__fetch_source url ref patch fetch_id dir)
+  set(tmp "${dir}.tmp")
+  file(REMOVE_RECURSE "${tmp}")
+  file(MAKE_DIRECTORY "${tmp}")
+  foreach(args
+      "init;-q"
+      "remote;add;origin;${url}"
+      "fetch;-q;--depth;1;origin;${ref}"
+      "checkout;-q;FETCH_HEAD"
+      "tag;px-base")
+    __git("${tmp}" ${args})
+  endforeach()
+
+  if(patch MATCHES "\\.(patch|diff)$")
+    __git("${tmp}" apply --whitespace=nowarn "${patch}")
+  elseif(patch)
+    set(${fetch_id}_SOURCE_DIR "${tmp}")
+    include("${patch}")
+  endif()
+  if(patch)
+    # Commit so the patch result counts as clean in __check_clean.
+    __git("${tmp}" add -A)
+    get_filename_component(patch_name "${patch}" NAME)
+    __git("${tmp}" -c user.name=px -c user.email=px@localhost
+      commit -q --allow-empty -m "px: ${patch_name}")
+  endif()
+
+  file(REMOVE_RECURSE "${dir}")
+  file(RENAME "${tmp}" "${dir}")
+endfunction()
+
+# Runs git in `dir`; on failure deletes `dir` (always a .tmp checkout).
+function(__git dir)
+  execute_process(COMMAND "${GIT_EXECUTABLE}" ${ARGN}
+    WORKING_DIRECTORY "${dir}"
+    RESULT_VARIABLE rc
+    ERROR_VARIABLE err)
+  if(NOT rc EQUAL 0)
+    file(REMOVE_RECURSE "${dir}")
+    string(JOIN " " cmd ${ARGN})
+    log_fatal("import_dependency: `git ${cmd}` failed in ${dir}\n${err}")
+  endif()
+endfunction()
+
+# Refuses to replace a source dir holding changes a re-fetch would destroy.
+function(__check_clean dir name)
+  if(NOT IS_DIRECTORY "${dir}")
+    return()
+  endif()
+  # Without its own .git, `git status` would walk up into the parent repo.
+  if(NOT IS_DIRECTORY "${dir}/.git")
+    log_fatal("import_dependency: ${dir} is not a git checkout; delete it to re-fetch.")
+  endif()
+  execute_process(COMMAND "${GIT_EXECUTABLE}" status --porcelain
+    WORKING_DIRECTORY "${dir}"
+    OUTPUT_VARIABLE changes)
+  if(changes)
+    # Checkouts fetched before px-base existed: diff against HEAD instead.
+    execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse -q --verify px-base
+      WORKING_DIRECTORY "${dir}"
+      RESULT_VARIABLE no_base
+      OUTPUT_QUIET)
+    set(base px-base)
+    if(no_base)
+      set(base HEAD)
+    endif()
+    set(patch_file "${__base_dir}/patches/${name}.patch")
+    # Indented lines are printed verbatim by message(); the rest gets rewrapped.
+    string(REGEX REPLACE "([^\n]+)\n" "    \\1\n" changes "${changes}")
+    log_fatal("import_dependency: local changes in ${dir} would be lost by re-fetch.\n"
+      "${changes}"
+      "  Keep them as a patch (full diff from upstream, includes any current PATCH):\n"
+      "    git -C \"${dir}\" add -A\n"
+      "    git -C \"${dir}\" diff --cached --binary ${base} > \"${patch_file}\"\n"
+      "  and point this dep's PATCH at it in cmake/deps.cmake (replaces any existing PATCH).\n"
+      "  Then (or to discard them) remove the checkout:\n"
+      "    cmake -E rm -rf \"${dir}\"")
+  endif()
+endfunction()
 
 macro(__add_dependency namespace target fetch_id subdir)
   if(NOT TARGET ${namespace}::${target})
@@ -61,10 +150,14 @@ endmacro()
 #   SUBDIR             Include subdirectory relative to the source root
 #                      (e.g. "include", ".", "asio/include").
 #   BUILD_TYPE         (optional) Override DEPS_BUILD_TYPE for this dep.
+#   PATCH              (optional) Absolute path of a .patch/.diff (git apply) or
+#                      a CMake script (included with ${<fetch_id>_SOURCE_DIR}
+#                      set), run after a fresh fetch. See cmake/patches/README.md.
 #   OPTIONS            (optional) CMake variables to set before the library's
 #                      own CMake runs.  Pass as KEY=VALUE pairs.
 #
 # Exactly one of REPOSITORY / GITHUB / GITLAB / BITBUCKET must be given.
+# Sources are re-fetched whenever TAG or the PATCH file content changes.
 # Multiple calls sharing the same URL are safe — the fetch happens only
 # once and the include directory is shared.
 #-------------------------------------------------------------------------------
@@ -129,99 +222,76 @@ function(import_dependency qualified_target)
     endif()
   endforeach()
 
-  # --- Fetch the dependency (only once per fetch_id) ---
-  set(fetch_guard __fetched_${fetch_id})
-  if(NOT DEFINED ${fetch_guard})
-    # --- Build type for this dep (overrides DEPS_BUILD_TYPE) ---
-    set(_dep_build_type "${DEPS_BUILD_TYPE}")
-    if(DEFINED ARG_BUILD_TYPE)
-      set(_dep_build_type "${ARG_BUILD_TYPE}")
-    endif()
-
-    # Pass build type via CMAKE_ARGS (ExternalProject fallback only).
-    set(_dep_cmake_args "")
-    if(_dep_build_type)
-      list(APPEND _dep_cmake_args -DCMAKE_BUILD_TYPE=${_dep_build_type})
-    endif()
-
-    FetchContent_Declare(${fetch_id}
-      GIT_REPOSITORY ${repo_url}
-      GIT_TAG        ${ARG_TAG}
-      GIT_SHALLOW    TRUE
-      SYSTEM         TRUE
-      # Sources are shared across build dirs; build trees must not be.
-      BINARY_DIR     "${CMAKE_BINARY_DIR}/_deps/${fetch_id}-build"
-      SUBBUILD_DIR   "${CMAKE_BINARY_DIR}/_deps/${fetch_id}-subbuild"
-      CMAKE_ARGS     ${_dep_cmake_args}
-    )
-
-    string(TOUPPER "${fetch_id}" upper_id)
-
-    if(ARG_PATCH)
-      set(src_dir "${FETCHCONTENT_BASE_DIR}/${fetch_id}-src")
-      if(NOT EXISTS "${src_dir}")
-        file(MAKE_DIRECTORY "${src_dir}")
-        execute_process(
-          COMMAND git clone --depth 1 --branch "${ARG_TAG}"
-                  "${repo_url}" "${src_dir}"
-          RESULT_VARIABLE clone_ok
-          ERROR_VARIABLE  clone_err
-        )
-        if(NOT clone_ok EQUAL 0)
-          log_fatal("import_dependency: git clone failed for ${qualified_target}\n${clone_err}")
-        endif()
-        set(status "From fetch -> ")
-      else()
-        set(status "From cache -> ")
-      endif()
-      set(FETCHCONTENT_SOURCE_DIR_${upper_id} "${src_dir}" CACHE INTERNAL "")
-      set(${fetch_id}_SOURCE_DIR "${src_dir}")
-      include("${ARG_PATCH}")
-      set(suffix "  (patched)")
-    else()
-      if(DEFINED FETCHCONTENT_SOURCE_DIR_${upper_id}
-         AND FETCHCONTENT_SOURCE_DIR_${upper_id})
-        set(src_dir "${FETCHCONTENT_SOURCE_DIR_${upper_id}}")
-      else()
-        set(src_dir "${FETCHCONTENT_BASE_DIR}/${fetch_id}-src")
-        if(EXISTS "${src_dir}")
-          set(FETCHCONTENT_SOURCE_DIR_${upper_id} "${src_dir}" CACHE INTERNAL "")
-        endif()
-      endif()
-      if(EXISTS "${src_dir}")
-        set(status "From cache -> ")
-      else()
-        set(status "From fetch -> ")
-      endif()
-      set(suffix "")
-    endif()
-
-    log_status("${status}${qualified_target}${suffix}")
-
-    # Override CMAKE_BUILD_TYPE in the current (function) scope so that
-    # add_subdirectory children inherit the dependency's build type.
-    #
-    # Why a plain set() and not CACHE FORCE:
-    #   Directory-scope variables shadow cache entries. A FORCE-set cache
-    #   value is invisible to add_subdirectory when a non-cache variable
-    #   (set during project()) already exists in the calling scope. Worse,
-    #   FORCE-writing the cache can trigger a cmake reconfigure loop.
-    set(_parent_build_type "${CMAKE_BUILD_TYPE}")
-    if(_dep_build_type)
-      set(CMAKE_BUILD_TYPE "${_dep_build_type}")
-    endif()
-
-    log_level_to_notice()
-    set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
-    FetchContent_MakeAvailable(${fetch_id})
-    unset(CMAKE_POLICY_VERSION_MINIMUM)
-    log_level_restore()
-
-    # Restore parent build type
-    set(CMAKE_BUILD_TYPE "${_parent_build_type}")
-
-    set(${fetch_guard} TRUE)
+  # --- Source: reuse if fetched with the same stamp, else fetch ---
+  set(src_dir "${DEPS_DIR}/${fetch_id}-src")
+  set(stamp_file "${DEPS_DIR}/${fetch_id}.stamp")
+  # URL included: fetch_id drops the host, so github/gitlab org/repo collide.
+  set(stamp "${repo_url}@${ARG_TAG}")
+  if(ARG_PATCH)
+    file(SHA1 "${ARG_PATCH}" patch_hash)
+    string(APPEND stamp " patch:${patch_hash}")
   endif()
+
+  # Build dirs share DEPS_DIR; serialize check-and-fetch across configures.
+  file(MAKE_DIRECTORY "${DEPS_DIR}")
+  file(LOCK "${DEPS_DIR}/${fetch_id}.lock" GUARD FUNCTION TIMEOUT 600 RESULT_VARIABLE lock_rc)
+  if(NOT lock_rc EQUAL 0)
+    log_fatal("import_dependency: cannot lock ${fetch_id}: ${lock_rc}")
+  endif()
+
+  set(old_stamp "")
+  if(EXISTS "${stamp_file}" AND IS_DIRECTORY "${src_dir}")
+    file(READ "${stamp_file}" old_stamp)
+  endif()
+
+  if("${old_stamp}" STREQUAL "${stamp}")
+    set(status "From cache -> ")
+  else()
+    if(old_stamp)
+      set(status "Updated (${old_stamp} => ${stamp}) -> ")
+    else()
+      set(status "From fetch -> ")
+    endif()
+    __check_clean("${src_dir}" "${ns}")
+    __fetch_source("${repo_url}" "${ARG_TAG}" "${ARG_PATCH}" "${fetch_id}" "${src_dir}")
+    file(WRITE "${stamp_file}" "${stamp}")
+  endif()
+
+  file(LOCK "${DEPS_DIR}/${fetch_id}.lock" RELEASE)
+
+  set(suffix "")
+  if(ARG_PATCH)
+    set(suffix "  (patched)")
+  endif()
+  log_status("${status}${qualified_target}${suffix}")
+
+  # Source override: FetchContent skips its own download and only runs
+  # add_subdirectory (when the dep has a CMakeLists.txt).
+  string(TOUPPER "${fetch_id}" upper_id)
+  set(FETCHCONTENT_SOURCE_DIR_${upper_id} "${src_dir}")
+  FetchContent_Declare(${fetch_id} SOURCE_DIR "${src_dir}" SYSTEM)
+
+  set(_dep_build_type "${DEPS_BUILD_TYPE}")
+  if(DEFINED ARG_BUILD_TYPE)
+    set(_dep_build_type "${ARG_BUILD_TYPE}")
+  endif()
+
+  # Override CMAKE_BUILD_TYPE in the current (function) scope so that
+  # add_subdirectory children inherit the dependency's build type.
+  #
+  # Why a plain set() and not CACHE FORCE:
+  #   Directory-scope variables shadow cache entries. A FORCE-set cache
+  #   value is invisible to add_subdirectory when a non-cache variable
+  #   (set during project()) already exists in the calling scope. Worse,
+  #   FORCE-writing the cache can trigger a cmake reconfigure loop.
+  if(_dep_build_type)
+    set(CMAKE_BUILD_TYPE "${_dep_build_type}")
+  endif()
+
+  log_level_to_notice()
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
+  FetchContent_MakeAvailable(${fetch_id})
+  log_level_restore()
 
   # --- Create the CMake target ---
   __add_dependency(${ns} ${target} ${fetch_id} "${ARG_SUBDIR}")
