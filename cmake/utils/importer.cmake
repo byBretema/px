@@ -269,7 +269,9 @@ function(import_dependency qualified_target)
   # add_subdirectory (when the dep has a CMakeLists.txt).
   string(TOUPPER "${fetch_id}" upper_id)
   set(FETCHCONTENT_SOURCE_DIR_${upper_id} "${src_dir}")
-  FetchContent_Declare(${fetch_id} SOURCE_DIR "${src_dir}" SYSTEM)
+  # EXCLUDE_FROM_ALL: deps build only when linked, and their install() rules
+  # stay out of `cmake --install`.
+  FetchContent_Declare(${fetch_id} SOURCE_DIR "${src_dir}" SYSTEM EXCLUDE_FROM_ALL)
 
   set(_dep_build_type "${DEPS_BUILD_TYPE}")
   if(DEFINED ARG_BUILD_TYPE)

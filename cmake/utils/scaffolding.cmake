@@ -23,6 +23,17 @@ function(__glob_sources root_dir out_sources out_headers)
 endfunction()
 
 
+# Public headers as a FILE_SET: in-tree consumers get `dir` as include root,
+# and setup_export installs the set (subdirs included) next to the library.
+function(__add_header_set name scope dir)
+
+  file(GLOB_RECURSE _headers CONFIGURE_DEPENDS
+    "${dir}/*.hpp" "${dir}/*.hh" "${dir}/*.h" "${dir}/*.hxx")
+  target_sources(${name} ${scope} FILE_SET HEADERS BASE_DIRS "${dir}" FILES ${_headers})
+
+endfunction()
+
+
 function(make_exe name)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
@@ -48,15 +59,14 @@ endfunction()
 function(make_lib name type)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
-  add_library(${name} ${type} ${_sources} ${_headers} ${ARGN})
+  add_library(${name} ${type} ${_sources} ${ARGN})
+  __add_header_set(${name} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
+  # Build-tree only: fetched deps are not installed, so the export must not
+  # reference them (consumers of the installed package provide their own).
   if(TARGET all_dependencies)
-    target_link_libraries(${name} PUBLIC all_dependencies)
+    target_link_libraries(${name} PUBLIC $<BUILD_INTERFACE:all_dependencies>)
   endif()
-
-  target_include_directories(${name} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/${__export_namespace}>)
 
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
@@ -73,10 +83,7 @@ endfunction()
 function(make_lib_header_only name)
 
   add_library(${name} INTERFACE)
-
-  target_include_directories(${name} INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/${__export_namespace}>)
+  __add_header_set(${name} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
   list(APPEND __export_targets ${name})
   set(__export_targets "${__export_targets}" CACHE INTERNAL "")
@@ -137,12 +144,22 @@ function(setup_export)
 
   include(CMakePackageConfigHelpers)
 
-  install(TARGETS ${__export_targets}
-    EXPORT ${export_set}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  # One install() per target: each library's headers go to their own
+  # include/<ns>/<target>/ (mirrors the in-tree include root, no collisions).
+  foreach(target IN LISTS __export_targets)
+    set(header_set "")
+    get_target_property(sets ${target} INTERFACE_HEADER_SETS)
+    if(sets)
+      set(header_set FILE_SET HEADERS
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${__export_namespace}/${target})
+    endif()
+    install(TARGETS ${target}
+      EXPORT ${export_set}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ${header_set})
+  endforeach()
 
   install(EXPORT ${export_set}
     FILE ${export_set}.cmake
@@ -150,11 +167,14 @@ function(setup_export)
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${__export_namespace})
 
   set(config_content "@PACKAGE_INIT@\n\n")
+  if(ARG_DEPS)
+    string(APPEND config_content "include(CMakeFindDependencyMacro)\n")
+  endif()
   foreach(dep ${ARG_DEPS})
     string(APPEND config_content "find_dependency(${dep})\n")
   endforeach()
   string(APPEND config_content "include(\"\${CMAKE_CURRENT_LIST_DIR}/${export_set}.cmake\")\n")
-  string(APPEND config_content "set(${__export_namespace}_FOUND TRUE)\n")
+  string(APPEND config_content "check_required_components(${__export_namespace})\n")
 
   set(config_in_path "${CMAKE_BINARY_DIR}/${__export_namespace}Config.cmake.in")
   file(WRITE "${config_in_path}" "${config_content}")
@@ -176,6 +196,7 @@ function(setup_export)
       DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__export_namespace}")
   endif()
 
-  log_status("Export generated (${__export_namespace} :: ${__export_targets})")
+  string(JOIN ", " targets ${__export_targets})
+  log_status("Export generated (${__export_namespace} :: ${targets})")
 
 endfunction()

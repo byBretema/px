@@ -37,6 +37,8 @@
 | `make_hlib(name)` | Header-only interface library (alias of `make_lib_header_only`) |
 | `make_test(name)` | Like `make_exe` + `add_test()`, not exported |
 
+- Library headers: recursive glob into a `FILE_SET HEADERS` (dir is the include root); installed to `include/<ns>/<target>/`
+- Libraries link deps as `$<BUILD_INTERFACE:all_dependencies>`; deps never appear in the export
 - Sources: non-recursive glob of `*.cpp *.cc *.c *.cxx` + headers in the target dir
 
 ## Modules

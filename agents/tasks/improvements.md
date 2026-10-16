@@ -15,9 +15,8 @@ Each of these breaks a common workflow today.
 - [x] **C2 `just add_exe` / `add_lib` write unparseable CMake** (Fixed 2026-10-15) — `justfile:143,154`
   - `echo "add_subdirectory(x)\n"` writes a literal `\n`; next configure fails with `Parse error. Expected a command name, got unquoted argument with text "\n"`.
   - Fix: `printf 'add_subdirectory(%s)\n'`.
-- [ ] **C3 `make_lib` + `setup_export` fails at generate** (Verified) — `cmake/utils/scaffolding.cmake:54`
-  - `make_lib` links `all_dependencies` `PUBLIC`; it is in no export set, so generate fails: `install(EXPORT "px-targets" ...) includes target "bar" which requires target "all_dependencies" that is not in any export set`.
-  - Fix: link deps `PRIVATE` (or `$<BUILD_INTERFACE:all_dependencies>`), and let libs declare their own public deps.
+- [x] **C3 `make_lib` + `setup_export` fails at generate** (Fixed 2026-10-16)
+  - `make_lib` links `$<BUILD_INTERFACE:all_dependencies>` PUBLIC: in-tree consumers unchanged, export no longer references deps. Limits: C32, C33.
 - [x] **C4 Bumping a dep `TAG` is silently ignored** (Fixed 2026-10-16)
   - Importer owns sources: shallow `git fetch <TAG>` into `DEPS_DIR/<id>-src`, stamp `DEPS_DIR/<id>.stamp` holds `URL@TAG` (+ PATCH SHA1; URL because `fetch_id` drops the host). Stamp mismatch re-fetches and logs `Updated (old => new)`; match reuses offline. FetchContent only runs `add_subdirectory` via `FETCHCONTENT_SOURCE_DIR_<ID>` (normal var, no cache entry).
   - `FETCHCONTENT_BASE_DIR` is now `<build>/_deps`, so nested FetchContent from deps (e.g. EASTL's EABase) is per build dir too.
@@ -26,12 +25,11 @@ Each of these breaks a common workflow today.
   - PATCH accepts `.patch`/`.diff` (`git apply`) or a CMake script. Fetched commit tagged `px-base`; the local-edits error prints the `git diff --cached --binary px-base > cmake/patches/<ns>.patch` commands to capture edits (verified end to end, including re-capturing on top of an existing patch).
   - PATCH playground: `cmake/patches/utfcpp.cmake` (script) and `argparse.patch` (diff) add a marker define; `tests/test_patch` fails to compile without them. Docs: `cmake/patches/README.md`.
 
-- [ ] **C5 Installed package is broken** (Verified) — `cmake/utils/scaffolding.cmake:59,79,138`
-  - Headers are never installed, yet the export advertises `${_IMPORT_PREFIX}/include/px`; consumers get "non-existent path" errors.
-  - Fix: `target_sources(... PUBLIC FILE_SET HEADERS BASE_DIRS ... FILES ...)` + `install(TARGETS ... FILE_SET HEADERS)`.
-- [ ] **C6 `cmake --install` installs dependency headers/libs** (Verified)
-  - Install tree gets cpr, EASTL, ctre, range-v3, httplib, utfcpp, tl, etc.
-  - Fix: `EXCLUDE_FROM_ALL` in `FetchContent_Declare` (supported since 3.28). Also stops building unused dep targets by default.
+- [x] **C5 Installed package is broken** (Fixed 2026-10-16)
+  - Headers are a `FILE_SET HEADERS` (recursive glob, so `polyfills/` etc. are included), installed per target to `include/<ns>/<target>/`, which is also the exported include dir. Verified with an external consumer project (`find_package(px)`, links `px::core`/`px::bar`/`px::baz`).
+- [x] **C6 `cmake --install` installs dependency headers/libs** (Fixed 2026-10-16)
+  - `EXCLUDE_FROM_ALL` in `FetchContent_Declare`; install tree now holds only px headers, libs, and CMake package files.
+  - Not covered: shared deps needed at runtime by installed executables (e.g. `libmimalloc.so` with `USE_MIMALLOC=ON`) are not installed either. Would need `install(TARGETS ... RUNTIME_DEPENDENCIES)` or `install(IMPORTED_RUNTIME_ARTIFACTS)`.
 - [x] **C7 `USE_MIMALLOC=ON` fails configure** (Fixed 2026-10-15) — `cmake/configs/malloc.cmake:6`
   - `import_dependency(mimalloc::mimalloc ...)` has no `SUBDIR`; `import_dependency` fatals with `SUBDIR is required`.
   - Fix: add `SUBDIR include`.
@@ -60,8 +58,8 @@ Each of these breaks a common workflow today.
 - [ ] **C13 C++-only warnings applied to C sources** (Inspected) — `cmake/configs/warnings.cmake:45`
   - Globs include `*.c`; GCC warns `-Wold-style-cast`/`-Wnon-virtual-dtor`/`-Woverloaded-virtual`/`-Wuseless-cast` are "valid for C++ but not for C".
   - Fix: wrap C++-only flags in `$<$<COMPILE_LANGUAGE:CXX>:...>`.
-- [ ] **C14 Generated Config.cmake lacks `find_dependency`** (Inspected) — `cmake/utils/scaffolding.cmake:150`
-  - `find_dependency()` used without `include(CMakeFindDependencyMacro)`; any `DEPS` arg yields an unknown-command error in consumers. `set(px_FOUND TRUE)` is redundant; add `check_required_components`.
+- [x] **C14 Generated Config.cmake lacks `find_dependency`** (Fixed 2026-10-16)
+  - `include(CMakeFindDependencyMacro)` when `DEPS` given, `check_required_components(<ns>)`, dropped the redundant `_FOUND`. Verified with `setup_export(DEPS Threads)`.
 - [x] **C15 Fetch guard is dead code** (Fixed 2026-10-16, with C4: guard, `CMAKE_ARGS`, `CMP0135` removed)
 - [ ] **C16 Dead/ineffective state in `base.cmake`** (Verified)
   - `unset(__pre_project_invoked)` clears the normal var only; the `CACHE INTERNAL` entry persists, so the missing-`pre_project()` warning never fires after the first configure. Use a plain variable.
@@ -71,6 +69,13 @@ Each of these breaks a common workflow today.
   - asio has no CMakeLists; `ASIO_STANDALONE` / `ASIO_NO_DEPRECATED` become cache vars nobody reads. They are preprocessor macros: add `target_compile_definitions` support (e.g. a `DEFINES` arg) or drop them.
 - [ ] **C18 INTERFACE dep targets skipped when linking** (Inspected) — `cmake/utils/importer.cmake:37`
   - Found INTERFACE targets (not under `ns::target`) are not linked, dropping their compile definitions/features/transitive deps. Link them too.
+
+- [ ] **C32 Installed static libs using compiled deps can't be linked** (Verified)
+  - Deps are not installed (C6) and not in the export (C3), so a consumer of an installed `STATIC` px lib that calls into e.g. fmt gets `undefined reference to fmt::v11::vformat`. Header-only deps and SHARED libs are fine.
+  - Options: `find_dependency` + `$<LINK_ONLY:...>` against system/installed deps (needs MF9), install the compiled deps alongside, or document "install STATIC libs only when dep-free".
+- [ ] **C33 SHARED px libs re-export symbols of static deps** (Verified)
+  - Deps are not built with hidden visibility, so e.g. `libbaz.so` exports fmt's symbols; a consumer linking it even resolved another lib's fmt references through it by accident. Risk: symbol clashes with a consumer's own fmt.
+  - Fix: `-Wl,--exclude-libs,ALL` on SHARED px libs (GNU/LLVM linkers), or hidden visibility for deps.
 
 ## Correctness — Low
 
@@ -88,8 +93,7 @@ Each of these breaks a common workflow today.
   - `get_filename_component(DIRECTORY)` of `/` is `/`, never `""`. Compare against previous value. Error message names `build_dir` instead of the script dir. Missing manifest exits 0 (CI passes with no build).
 - [ ] **C21 Root-dir assumptions break use as a subproject**
   - `CMAKE_SOURCE_DIR` used for vendor, ccache dir, compile_commands copy, manifest. Use `PROJECT_SOURCE_DIR`; gate `add_subdirectory(tests)` on `PROJECT_IS_TOP_LEVEL` (or `BUILD_TESTING`).
-- [ ] **C22 `setup_export(NAMESPACE)` mismatch** — `scaffolding.cmake:9,126`
-  - Libs already captured `include/${__export_namespace}` before `NAMESPACE` changes it.
+- [x] **C22 `setup_export(NAMESPACE)` mismatch** (Fixed 2026-10-16, with C5: install include dir is computed in `setup_export`)
 - [ ] **C23 mimalloc helper issues** — `cmake/configs/malloc.cmake`
   - `${mimalloc_BINARY_DIR}` is undefined (project is `libmimalloc`, fetch id `microsoft_mimalloc`); use `$<TARGET_FILE_DIR:mimalloc>`.
   - Warning suppressions re-applied to `mimalloc` on every `target_link_mimalloc` call; move next to the import.
@@ -131,7 +135,7 @@ Each of these breaks a common workflow today.
 
 1. ~~C1, C2, C7, C30~~ (one-liners that unblock basic use)
 2. ~~C8, C4, C10~~ (dev-loop correctness)
-3. C3, C5, C6, C14 (install/export story)
+3. ~~C3, C5, C6, C14~~ (install/export story); follow-ups C32, C33
 4. C9, C11, C13 (strict warnings actually usable)
 5. Rest, then MF items
 
