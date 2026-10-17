@@ -2,8 +2,8 @@
 
 ## Standard
 
-- C++20 (`CMAKE_CXX_STANDARD 20`, extensions off, required)
-- Note: glaze currently raises every target to C++23 (see `agents/tasks/improvements.md` C11); do not rely on C++23 features
+- C++23 (`CMAKE_CXX_STANDARD 23`, extensions off, required); glaze requires it
+- Use `std::expected` (no polyfill)
 
 ## Header guards
 

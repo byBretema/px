@@ -48,9 +48,9 @@ Each of these breaks a common workflow today.
   - Wrapper include dirs are `SYSTEM INTERFACE`. Verified: a target including one header of every dep under `debug-strict` went from 139 errors (sign-conversion, old-style-cast, conversion, useless-cast, undef) to 0, GCC and Clang.
 - [x] **C10 Global defaults don't reach dependencies** (Fixed 2026-10-16)
   - New "Toolchain" stage before deps: `cache.cmake`, `linker.cmake`, `global.cmake` (PIC + output dirs). Deps now get ccache, mold, `-fPIC` (static deps link into SHARED libs), and `bin/`/`lib/` outputs.
-- [ ] **C11 Project builds as C++23, not C++20** (Verified)
-  - glaze v7 exports `INTERFACE cxx_std_23`; via `all_dependencies` every target gets `-std=c++23`. Rules say C++20.
-  - Decide: accept C++23 (update rules, drop `tl::expected` polyfill) or pin a glaze release that supports C++20.
+- [x] **C11 Project builds as C++23, not C++20** (Resolved 2026-10-17: C++23 adopted)
+  - glaze v7 requires `cxx_std_23`. Default `CMAKE_CXX_STANDARD` is now 23, rules updated, `tl::expected` dep dropped (unused; `std::expected` instead).
+  - Raises the compiler floor (`std::expected`: GCC 12, Clang 16, MSVC 19.33); see MF5.
 - [ ] **C12 `CCACHE_DIR` has no effect at build time** (Inspected) — `cmake/configs/cache.cmake:10`
   - `set(ENV{...})` only lives during configure; ninja-launched ccache uses the shell env. Works via `just` only because the justfile exports it.
   - Fix: launcher `${CMAKE_COMMAND} -E env CCACHE_DIR=... ${__ccache_found}`, or drop the CMake-side default.
@@ -115,10 +115,10 @@ Each of these breaks a common workflow today.
 - [ ] **MF4** Feature detection (`check_*`), clang-tidy/cppcheck hooks
 - [ ] **MF5** Minimum compiler version validation
 - [ ] **MF6** Multi-config generator handling (`CMAKE_BUILD_TYPE` checks, compile_commands, ctest `-C`)
-- [ ] **MF7** `try_compile` / C++20 feature validation
+- [ ] **MF7** `try_compile` / C++23 feature validation
 - [ ] **MF8** CI presets: `buildPresets`, `testPresets` (generator now in presets)
 - [ ] **MF9** `find_package` fallback for system deps (ref: `CPMFindPackage`, FetchContent `FIND_PACKAGE_ARGS`)
-- [ ] **MF10** `target_compile_features(cxx_std_20)` instead of global `CMAKE_CXX_STANDARD`
+- [ ] **MF10** `target_compile_features(cxx_std_23)` instead of global `CMAKE_CXX_STANDARD`
 - [ ] **MF11** Opt-in local packages (ref: `CPM_USE_LOCAL_PACKAGES`); overlaps MF9
 - [ ] **MF12** Dep lock file (resolved SHA per dep); per-dep stamps from C4 are the base
 - [ ] **MF13** `CMAKE_INSTALL_PREFIX` default/validation, install presets
@@ -134,7 +134,7 @@ Each of these breaks a common workflow today.
 1. ~~C1, C2, C7, C30~~ (one-liners that unblock basic use)
 2. ~~C8, C4, C10~~ (dev-loop correctness)
 3. ~~C3, C5, C6, C14~~ (install/export story); follow-ups C32, C33
-4. ~~C9, C13~~, C11 (strict warnings actually usable; C11 needs a decision)
+4. ~~C9, C13, C11~~ (strict warnings actually usable)
 5. Rest, then MF items
 
 ## Key decisions (kept from `rework.md`)

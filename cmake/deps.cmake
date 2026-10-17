@@ -101,16 +101,6 @@ import_dependency(ctre::ctre
 )
 
 #-------------------------------------------------------------------------------
-# tl::expected — C++20 polyfill for std::expected (C++23)
-#-------------------------------------------------------------------------------
-import_dependency(tl::expected
-  GITHUB    TartanLlama/expected
-  TAG       v1.1.0
-  SUBDIR    include
-  OPTIONS   EXPECTED_BUILD_TESTS=OFF
-)
-
-#-------------------------------------------------------------------------------
 # Function2 — fu2::function
 #-------------------------------------------------------------------------------
 import_dependency(fu2::function

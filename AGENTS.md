@@ -48,7 +48,6 @@ Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --t
 - ccache, mold, PIC, output dirs apply to deps too; visibility, warnings, LTO, C++ standard apply to own targets only.
 - Changing a dep's URL, `TAG` or `PATCH` file re-fetches that dep on next configure; no `just clean deps` needed. A re-fetch refuses to wipe local edits in `.deps/<id>-src`; the error prints the commands to capture them as `cmake/patches/<ns>.patch` (see `cmake/patches/README.md`).
 - Installed package: px headers/libs only (no deps), headers at `include/<ns>/<target>/`. Installed STATIC libs that use compiled deps can't be linked by consumers (C32).
-- glaze forces `cxx_std_23` on every target through `all_dependencies`.
 
 ## Code rules
 

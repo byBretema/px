@@ -5,7 +5,7 @@
 function(setup_warnings project_name)
 
   # MSVC — compiler conformance flags
-  #        (not warnings, but required for correct C++20 behaviour on MSVC)
+  #        (not warnings, but required for correct modern C++ behaviour on MSVC)
 
   set(MSVC_OPTIONS
     /Zc:preprocessor  # conforming preprocessor (two-phase name lookup)
