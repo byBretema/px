@@ -71,7 +71,7 @@ function(__check_clean dir name)
   endif()
   # Without its own .git, `git status` would walk up into the parent repo.
   if(NOT IS_DIRECTORY "${dir}/.git")
-    log_fatal("import_dependency: ${dir} is not a git checkout; delete it to re-fetch.")
+    log_fatal("import_dependency: ${dir} is not a git checkout, delete it to re-fetch.")
   endif()
   execute_process(COMMAND "${GIT_EXECUTABLE}" status --porcelain
     WORKING_DIRECTORY "${dir}"
@@ -100,7 +100,7 @@ function(__check_clean dir name)
   endif()
 endfunction()
 
-macro(__add_dependency namespace target fetch_id subdir)
+macro(__add_dependency namespace target fetch_id subdir defines)
   if(NOT TARGET ${namespace}::${target})
     # 3-step target lookup: qualified → plain → underscore
     set(_candidates
@@ -122,15 +122,19 @@ macro(__add_dependency namespace target fetch_id subdir)
     target_include_directories(${namespace}_${target} SYSTEM INTERFACE
       "${${fetch_id}_SOURCE_DIR}/${subdir}")
 
-    # Link compiled targets (skip INTERFACE — headers only).
+    # INTERFACE targets too: they may carry definitions, features, deps.
     if(_real_target)
-      get_target_property(_type ${_real_target} TYPE)
-      if(NOT _type STREQUAL "INTERFACE_LIBRARY")
-        target_link_libraries(${namespace}_${target} INTERFACE ${_real_target})
-      endif()
+      target_link_libraries(${namespace}_${target} INTERFACE ${_real_target})
     endif()
 
     add_library(${namespace}::${target} ALIAS ${namespace}_${target})
+  endif()
+
+  # Macro parameter, not a variable: test its expanded text.
+  # On all_dependencies, not the dep's target: px owns it, so the defines
+  # never leak to anything else linking the dep.
+  if(NOT "${defines}" STREQUAL "")
+    target_compile_definitions(all_dependencies INTERFACE ${defines})
   endif()
 
   target_link_libraries(all_dependencies INTERFACE ${namespace}::${target})
@@ -157,6 +161,11 @@ endmacro()
 #                      set), run after a fresh fetch. See cmake/patches/README.md.
 #   OPTIONS            (optional) CMake variables to set before the library's
 #                      own CMake runs.  Pass as KEY=VALUE pairs.
+#   DEFINES            (optional) Preprocessor definitions for px targets
+#                      using the dep (e.g. config macros of header-only libs).
+#                      Consumer side only: the dep's own build never sees
+#                      them, so ABI-affecting macros of compiled deps belong
+#                      in OPTIONS (the dep's own CMake switches) instead.
 #
 # Exactly one of REPOSITORY / GITHUB / GITLAB / BITBUCKET must be given.
 # Sources are re-fetched whenever TAG or the PATCH file content changes.
@@ -164,7 +173,7 @@ endmacro()
 # once and the include directory is shared.
 #-------------------------------------------------------------------------------
 function(import_dependency qualified_target)
-  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH;BUILD_TYPE" "OPTIONS" ${ARGN})
+  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH;BUILD_TYPE" "OPTIONS;DEFINES" ${ARGN})
 
   # --- Resolve repository URL from shorthand or full URL ---
   set(shorthand "")
@@ -298,5 +307,10 @@ function(import_dependency qualified_target)
   log_level_restore()
 
   # --- Create the CMake target ---
-  __add_dependency(${ns} ${target} ${fetch_id} "${ARG_SUBDIR}")
+  # OPTIONS only reach a dep through its own CMakeLists.txt.
+  if(ARG_OPTIONS AND NOT EXISTS "${src_dir}/CMakeLists.txt")
+    log_warning("import_dependency: ${qualified_target} has no CMakeLists.txt, so OPTIONS are ignored (use DEFINES for macros)")
+  endif()
+
+  __add_dependency(${ns} ${target} ${fetch_id} "${ARG_SUBDIR}" "${ARG_DEFINES}")
 endfunction()

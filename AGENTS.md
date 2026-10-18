@@ -16,7 +16,7 @@
 
 ## Commands
 
-All via `just` (bash). Build dirs `.build/<group>/`, deps sources `.deps/`, ccache `.cache/`.
+All via `just` (bash). Build dirs `.build/<group>/`, deps sources `.deps/`, ccache `.cache/` (ccache `cache_dir` passed by CMake, no env needed).
 
 - `just build [targets...]`: configure + build the active preset (last used, default `debug`).
 - `just preset=profile-strict build`: switch preset; later `just build/run/test` reuse it.
@@ -30,7 +30,7 @@ Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --t
 
 ## Common changes
 
-- New dependency: add an `import_dependency(ns::target GITHUB org/repo TAG <tag> SUBDIR <include-dir> [OPTIONS K=V...])` block to `cmake/deps.cmake`. It is linked into every target through `all_dependencies`.
+- New dependency: add an `import_dependency(ns::target GITHUB org/repo TAG <tag> SUBDIR <include-dir> [OPTIONS K=V...] [DEFINES MACRO...])` block to `cmake/deps.cmake`. It is linked into every target through `all_dependencies`.
 - New target: create `projects/<name>/CMakeLists.txt` with one `make_*` call, then `add_subdirectory(<name>)` in `projects/CMakeLists.txt`.
 - New option: `cmake/configs/options.cmake`, following the `USE_*` / `ENABLE_*` / `FORCE_*` prefixes.
 
@@ -47,7 +47,7 @@ Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --t
 - `.build/active_preset` (written by CMake at configure): line 1 preset, line 2 build dir.
 - ccache, mold, PIC, output dirs apply to deps too; visibility, warnings, LTO, C++ standard apply to own targets only.
 - Changing a dep's URL, `TAG` or `PATCH` file re-fetches that dep on next configure; no `just clean deps` needed. A re-fetch refuses to wipe local edits in `.deps/<id>-src`; the error prints the commands to capture them as `cmake/patches/<ns>.patch` (see `cmake/patches/README.md`).
-- Installed package: px headers/libs only (no deps), headers at `include/<ns>/<target>/`. Installed STATIC libs that use compiled deps can't be linked by consumers (C32).
+- Installed package: px headers/libs only (no deps), headers at `include/<ns>/<target>/`. Installed STATIC libs that use compiled deps can't be linked by consumers (deps are not installed).
 
 ## Code rules
 

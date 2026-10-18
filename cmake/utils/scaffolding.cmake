@@ -68,6 +68,15 @@ function(make_lib name type)
     target_link_libraries(${name} PUBLIC $<BUILD_INTERFACE:all_dependencies>)
   endif()
 
+  # Keep symbols of static libs linked into a shared lib (e.g. fmt) private,
+  # so they cannot satisfy or clash with a consumer's own copies.
+  # MSVC: not needed, DLLs export only dllexport'd symbols.
+  # Apple: not covered; ld64 has no --exclude-libs, so dylibs still export
+  # them (per-archive -hidden-l<name> / -load_hidden would be needed).
+  if(type STREQUAL "SHARED" AND NOT APPLE AND NOT MSVC)
+    target_link_options(${name} PRIVATE "LINKER:--exclude-libs,ALL")
+  endif()
+
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
 

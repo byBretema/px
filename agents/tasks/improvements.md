@@ -51,9 +51,8 @@ Each of these breaks a common workflow today.
 - [x] **C11 Project builds as C++23, not C++20** (Resolved 2026-10-17: C++23 adopted)
   - glaze v7 requires `cxx_std_23`. Default `CMAKE_CXX_STANDARD` is now 23, rules updated, `tl::expected` dep dropped (unused; `std::expected` instead).
   - Raises the compiler floor (`std::expected`: GCC 12, Clang 16, MSVC 19.33); see MF5.
-- [ ] **C12 `CCACHE_DIR` has no effect at build time** (Inspected) — `cmake/configs/cache.cmake:10`
-  - `set(ENV{...})` only lives during configure; ninja-launched ccache uses the shell env. Works via `just` only because the justfile exports it.
-  - Fix: launcher `${CMAKE_COMMAND} -E env CCACHE_DIR=... ${__ccache_found}`, or drop the CMake-side default.
+- [x] **C12 `CCACHE_DIR` has no effect at build time** (Fixed 2026-10-18)
+  - Launcher is `ccache cache_dir=<dir>` (ccache 4.8+ key=value syntax); default `<source>/.cache/ccache`, `CCACHE_DIR` env at configure overrides. justfile no longer exports `CCACHE_DIR`/`DEPS_DIR`. Verified: plain cmake with no env, clean rebuild 46/46 hits.
 - [x] **C13 C++-only warnings applied to C sources** (Fixed 2026-10-16)
   - `-Wnon-virtual-dtor`, `-Wold-style-cast`, `-Woverloaded-virtual`, `-Wuseless-cast` wrapped in `$<$<COMPILE_LANGUAGE:CXX>:...>`. Verified: a `.c` file in a target no longer triggers "valid for C++/ObjC++ but not for C".
 - [x] **C14 Generated Config.cmake lacks `find_dependency`** (Fixed 2026-10-16)
@@ -63,20 +62,25 @@ Each of these breaks a common workflow today.
   - `unset(__pre_project_invoked)` clears the normal var only; the `CACHE INTERNAL` entry persists, so the missing-`pre_project()` warning never fires after the first configure. Use a plain variable.
   - `CMAKE_DISABLE_SOURCE_CHANGES` / `CMAKE_DISABLE_IN_SOURCE_BUILD` are undocumented. `CMAKE_DISABLE_SOURCE_CHANGES` is enforced at generate time (it rejected a custom command output in the source root, hence the stamp in C1); `CMAKE_DISABLE_IN_SOURCE_BUILD` is redundant with the explicit in-source check. Decide whether to keep the former; remove the latter.
   - Default `CMAKE_BUILD_TYPE` should be skipped for multi-config generators (`CMAKE_CONFIGURATION_TYPES`).
-- [ ] **C17 `import_dependency` OPTIONS that are no-ops** (Inspected) — `cmake/deps.cmake:27-28`
-  - asio has no CMakeLists; `ASIO_STANDALONE` / `ASIO_NO_DEPRECATED` become cache vars nobody reads. They are preprocessor macros: add `target_compile_definitions` support (e.g. a `DEFINES` arg) or drop them.
-- [ ] **C18 INTERFACE dep targets skipped when linking** (Inspected) — `cmake/utils/importer.cmake:37`
-  - Found INTERFACE targets (not under `ns::target`) are not linked, dropping their compile definitions/features/transitive deps. Link them too.
-
+- [x] **C17 `import_dependency` OPTIONS that are no-ops** (Fixed 2026-10-18)
+  - New `DEFINES` arg: INTERFACE compile definitions on `all_dependencies` (px-owned; dep targets are never modified). Consumer side only; ABI-affecting macros of compiled deps belong in OPTIONS. asio uses `DEFINES ASIO_STANDALONE ASIO_NO_DEPRECATED`, verified on consumer compile lines. OPTIONS on a dep without CMakeLists.txt now warn.
+- [x] **C18 INTERFACE dep targets skipped when linking** (Fixed 2026-10-18)
+  - Found targets are linked regardless of type. Only phmap was affected (its INTERFACE target carries nothing today), so latent.
+  - Noticed: lookup misses deps whose targets use another namespace (utfcpp exports `utf8cpp::utf8cpp`, function2 `function2::function2`); they work through the include dir only. A `TARGET` arg to name the real target would close it if one ever carries usage requirements.
 - [ ] **C32 Installed static libs using compiled deps can't be linked** (Verified)
   - Deps are not installed (C6) and not in the export (C3), so a consumer of an installed `STATIC` px lib that calls into e.g. fmt gets `undefined reference to fmt::v11::vformat`. Header-only deps and SHARED libs are fine.
   - Options: `find_dependency` + `$<LINK_ONLY:...>` against system/installed deps (needs MF9), install the compiled deps alongside, or document "install STATIC libs only when dep-free".
-- [ ] **C33 SHARED px libs re-export symbols of static deps** (Verified)
-  - Deps are not built with hidden visibility, so e.g. `libbaz.so` exports fmt's symbols; a consumer linking it even resolved another lib's fmt references through it by accident. Risk: symbol clashes with a consumer's own fmt.
-  - Fix: `-Wl,--exclude-libs,ALL` on SHARED px libs (GNU/LLVM linkers), or hidden visibility for deps.
-
-## Correctness — Low
-
+- [x] **C33 SHARED px libs re-export symbols of static deps** (Fixed 2026-10-18)
+  - `LINKER:--exclude-libs,ALL` on SHARED `make_lib` targets (not Apple/MSVC). Verified: fmt symbols exported by a test `libbaz.so` 100 before, 0 after; own API still exported.
+- [ ] **C34 macOS: SHARED px libs still re-export symbols of static deps** (Inspected) — `cmake/utils/scaffolding.cmake` (`make_lib`)
+  - The C33 fix (`--exclude-libs,ALL`) is skipped on Apple: ld64 has no such flag. Mach-O dylibs export every default-visibility symbol, including those of static deps linked in (fmt, cpr, EASTL, glm), so a px dylib can clash with or accidentally satisfy a consumer's own copy. Builds still work; it is a correctness/ODR risk, not a link failure.
+  - Not an issue on Windows: DLLs export only `dllexport`'d symbols, and static deps carry none. MinGW (GNU ld auto-export) already gets the flag.
+  - Options:
+    - `-Wl,-hidden-l<name>` per static dep: needs each dep's archive name; fits linking by name only.
+    - `-Wl,-load_hidden,$<TARGET_FILE:dep>` per static dep: exact, via generator expressions over the static targets in `all_dependencies` (needs collecting them in `import_dependency`).
+    - `-Wl,-exported_symbols_list,<file>`: export only the lib's own API; needs a maintained list or one generated from the lib's objects.
+    - Hidden visibility for static deps (`CXX_VISIBILITY_PRESET hidden` on their targets): cross-platform, but only reaches the target the lookup finds, not every target a dep creates.
+  - Recommendation: `-load_hidden` over the static dep targets, verified on a Mac (`nm -gU libbaz.dylib | grep fmt` should be empty). Not attempted without one.
 - [ ] **C31 Damaged dep sources go unnoticed** — `cmake/utils/importer.cmake` (cache path)
   - When the stamp matches, the source dir is trusted blindly: deleted or modified tracked files (partial `rm`, a tool writing into `.deps/`, a debugging edit left behind) are not detected. Build errors then point at the dep, not at the cause.
   - Option A: run `git status --porcelain` on the cache path too. Measured on the 16 current deps: ~40 ms total warm, up to ~40 ms per large dep cold (range-v3, glaze, glm). Catches tracked-file deletions/edits; does not catch `.git` damage or added untracked files (those don't break builds).
@@ -106,6 +110,7 @@ Each of these breaks a common workflow today.
 - [ ] **C28 Docs drift in comments** — `warnings.cmake:11` (`/Zc:preprocessor` is not two-phase lookup; that's `/permissive-`), `defaults.cmake:36` (says "Set modules flags" but disables scanning), `-Wno-float-equal` / `-Wno-c++98-compat*` disable warnings that are never enabled.
 - [ ] **C29 Every target links every dep** — `all_dependencies`
   - All compiled deps (fmt, cpr, EASTL, glm) link into every exe/test. Consider per-target `DEPS` args on `make_*`.
+  - When doing this: `import_dependency` DEFINES currently land on `all_dependencies` (px-owned, so dep targets are never modified). Per-target linking must move them onto a px-owned handle per dep (e.g. `__dep_<ns>_<target>` linking the real target and holding SYSTEM includes + DEFINES), since `ns::target` is taken when the dep provides its own alias. Targets would then link those handles instead of `ns::target`.
 
 ## Missing features (carried over from `rework.md`)
 

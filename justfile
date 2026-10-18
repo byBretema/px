@@ -32,16 +32,12 @@ _root := justfile_directory()
 _build_dir := _root / '.build'
 _active := _build_dir / 'active_preset'
 _cache_dir := _root / '.cache'
+_deps_dir := _root / '.deps'
 
 _projects := `shopt -s nullglob; for d in projects/*/; do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 _tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 
 # --- Env ---
-# Do not rename vars in this list they are used by CMake
-# or other tools to override specific behaviors or output folders.
-
-export CCACHE_DIR := _cache_dir / 'ccache'
-export DEPS_DIR := _root / '.deps'
 
 export NINJA_STATUS := "[%p] "
 
@@ -122,7 +118,7 @@ _clean_build:
     @rm -f "{{ _root }}/compile_commands.json"
 
 _clean_deps:
-    @rm -rf "{{ DEPS_DIR }}"
+    @rm -rf "{{ _deps_dir }}"
 
 _clean_all:
     @just _clean_build

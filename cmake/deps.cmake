@@ -24,8 +24,8 @@ import_dependency(asio::asio
   GITHUB    chriskohlhoff/asio
   TAG       asio-1-38-2
   SUBDIR    asio/include
-  OPTIONS   ASIO_STANDALONE=ON
-            ASIO_NO_DEPRECATED=ON
+  DEFINES   ASIO_STANDALONE
+            ASIO_NO_DEPRECATED
 )
 
 #-------------------------------------------------------------------------------
