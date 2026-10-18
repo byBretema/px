@@ -75,7 +75,7 @@ build *targets: config
     cmake_args=()
     [[ -n "{{ build_flags }}" ]] && cmake_args+=({{ build_flags }})
     [[ -n "{{ targets }}"     ]] && cmake_args+=(--target {{ targets }})
-    cmake --build "$(sed -n 2p "{{ _active }}")" -j "$(just _num_of_jobs)" "${cmake_args[@]}"
+    cmake --build --preset {{ preset }} -j "$(just _num_of_jobs)" "${cmake_args[@]}"
 
 [no-exit-message]
 run target *args: (build target)
@@ -91,12 +91,12 @@ run target *args: (build target)
 # list... / empty == all
 test *tests: (build tests)
     #!/usr/bin/env bash
-    set -eu; echo
+    set -euo pipefail; echo
     regex=""
     if [[ -n "{{ tests }}" ]]; then
         regex="^({{ replace(tests, ' ', '|') }})$"
     fi
-    args=(--test-dir "$(sed -n 2p "{{ _active }}")" --output-on-failure --parallel 8)
+    args=(--preset {{ preset }})
     if [[ -n "$regex" ]]; then
         args+=(-R "$regex")
     fi

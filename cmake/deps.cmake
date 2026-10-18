@@ -180,7 +180,7 @@ import_dependency(EASTL::EASTL
 # )
 #-------------------------------------------------------------------------------
 
-log_sep()
+log_ln()
 log_status("All dependencies fetched and configured.")
 log_status("Interface target: 'all_dependencies'")
 

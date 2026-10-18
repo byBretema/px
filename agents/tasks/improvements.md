@@ -104,7 +104,7 @@ Each of these breaks a common workflow today.
 - [ ] **C25 mold flag not checked** — `cmake/configs/linker.cmake`
   - GCC < 12.1 rejects `-fuse-ld=mold`. Use `check_linker_flag`, or `CMAKE_LINKER_TYPE` once min is 3.29.
 - [x] **C26 `PATCH` path is fragile** (Fixed 2026-10-16, with C4: commit SHAs supported, PATCH runs once per fetch and is documented)
-- [ ] **C27 justfile nits**
+- [ ] **C27 justfile nits** (2026-10-18: `build`/`test` use `--preset`; `test` got `pipefail`, it used to exit 0 on failing tests)
   - `_list_all` calls missing recipe `_list_base` (`just list all` fails).
   - `run` uses `find -perm -u+x` (no Windows).
 - [ ] **C28 Docs drift in comments** — `warnings.cmake:11` (`/Zc:preprocessor` is not two-phase lookup; that's `/permissive-`), `defaults.cmake:36` (says "Set modules flags" but disables scanning), `-Wno-float-equal` / `-Wno-c++98-compat*` disable warnings that are never enabled.
@@ -121,7 +121,7 @@ Each of these breaks a common workflow today.
 - [ ] **MF5** Minimum compiler version validation
 - [ ] **MF6** Multi-config generator handling (`CMAKE_BUILD_TYPE` checks, compile_commands, ctest `-C`)
 - [ ] **MF7** `try_compile` / C++23 feature validation
-- [ ] **MF8** CI presets: `buildPresets`, `testPresets` (generator now in presets)
+- [x] **MF8** CI presets: `buildPresets`, `testPresets` for every configure preset (2026-10-18); test presets use `noTestsAction: error`
 - [ ] **MF9** `find_package` fallback for system deps (ref: `CPMFindPackage`, FetchContent `FIND_PACKAGE_ARGS`)
 - [ ] **MF10** `target_compile_features(cxx_std_23)` instead of global `CMAKE_CXX_STANDARD`
 - [ ] **MF11** Opt-in local packages (ref: `CPM_USE_LOCAL_PACKAGES`); overlaps MF9
@@ -132,7 +132,7 @@ Each of these breaks a common workflow today.
 ## Tooling / AI friendliness
 
 - [ ] **T1** `.clang-format` matching current style (2-space, attached braces), so style rules are enforced, not described.
-- [ ] **T2** CI workflow: configure + build + `ctest` on `debug-strict` and `debug-sanitizers` (C1, C8 done).
+- [x] **T2** CI workflow (2026-10-18, `.github/workflows/ci.yml`: GitHub Actions, Ubuntu 24.04, {gcc, clang} x `debug-sanitizers-strict`, skipped for doc-only changes, caches `.deps` and ccache): configure + build + `ctest` on `debug-strict` and `debug-sanitizers` (C1, C8 done).
 
 ## Suggested order
 

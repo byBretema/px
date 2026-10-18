@@ -43,29 +43,37 @@ macro(post_project)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
   endif()
 
-  log_header("Project: ${PROJECT_NAME}")
+  log_ln()
+  log_status("Project -> ${PROJECT_NAME}")
+
+  if(ACTIVE_PRESET)
+    log_status("Preset  -> ${ACTIVE_PRESET} (${CMAKE_BUILD_TYPE}, ${CMAKE_BINARY_DIR})")
+  else()
+    log_status("Preset  -> none")
+  endif()
+
+  # Toolchain: must precede deps so they inherit it
+  log_header("Toolchain")
+
   log_status("Compiler for C++ -> ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
   log_status("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})")
 
-  # 1. Options
   include(${__base_dir}/configs/options.cmake)
   include(${__base_dir}/configs/compile_commands.cmake)
 
-  # 2. Toolchain: must precede deps so they inherit it
-  log_header("Toolchain")
-
+  log_ln()
   include(${__base_dir}/configs/cache.cmake)
   include(${__base_dir}/configs/linker.cmake)
   include(${__base_dir}/configs/global.cmake)
 
-  # 3. Deps
-  log_header("Fulfilling dependencies")
+  # Deps
+  log_header("Dependencies")
 
   include(${__base_dir}/deps.cmake)
   include(${__base_dir}/configs/malloc.cmake)
 
-  # 4. Project setup: own targets only
-  log_header("Setup")
+  # Project setup: own targets only
+  # log_header("Setup")
 
   include(${__base_dir}/configs/defaults.cmake)
   include(${__base_dir}/configs/warnings.cmake)

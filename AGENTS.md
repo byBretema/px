@@ -26,7 +26,7 @@ All via `just` (bash). Build dirs `.build/<group>/`, deps sources `.deps/`, ccac
 - `just add_exe <name>` / `just add_lib <name> [SHARED|STATIC]`: scaffold under `projects/`.
 - `just clean [build|deps|all]`.
 
-Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --test-dir .build/debug`.
+Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest --preset debug` (every configure preset has matching build/test presets; test presets fail when no tests are found).
 
 ## Common changes
 
@@ -37,6 +37,7 @@ Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --t
 ## Verify
 
 - Configure + build + test with `debug-strict` (warnings as errors) and `debug-sanitizers` after CMake or C++ changes.
+- CI (`.github/workflows/ci.yml`) runs `debug-sanitizers-strict` on Ubuntu 24.04 with GCC and Clang, using plain CMake presets. Skipped for doc-only changes (`*.md`, `agents/`, `LICENSE`, `.gitignore`).
 - Read the configure log: the wrapper prints a section per stage (`Toolchain`, `Fulfilling dependencies`, `Setup`, `Export`).
 
 ## Gotchas
@@ -44,7 +45,7 @@ Without `just`: `cmake --preset debug && cmake --build .build/debug && ctest --t
 - Known bugs and backlog: `agents/tasks/improvements.md`. Read it before touching `cmake/`.
 - `compile_commands.json` reaches the source root via the `compile_commands` target (part of `ALL`). `cmake --build --target <x>` alone does not refresh it.
 - Build dir groups: `.build/<debug|profile|release>[_san]`. Presets in the same group (e.g. `debug`/`debug-strict`, `debug-asan`/`debug-ubsan`) share a dir and rebuild when switched.
-- `.build/active_preset` (written by CMake at configure): line 1 preset, line 2 build dir.
+- `.build/active_preset` (written by CMake at configure): line 1 preset (just's default), line 2 build dir (used by `just run` / `stale-check`). `just build`/`test` call `cmake --build --preset` / `ctest --preset`.
 - ccache, mold, PIC, output dirs apply to deps too; visibility, warnings, LTO, C++ standard apply to own targets only.
 - Changing a dep's URL, `TAG` or `PATCH` file re-fetches that dep on next configure; no `just clean deps` needed. A re-fetch refuses to wipe local edits in `.deps/<id>-src`; the error prints the commands to capture them as `cmake/patches/<ns>.patch` (see `cmake/patches/README.md`).
 - Installed package: px headers/libs only (no deps), headers at `include/<ns>/<target>/`. Installed STATIC libs that use compiled deps can't be linked by consumers (deps are not installed).

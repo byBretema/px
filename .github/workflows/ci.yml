@@ -1,0 +1,73 @@
+name: CI
+
+# Verification CI: runs for code/build changes only. Docs, agent files and
+# repo metadata are ignored.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "agents/**"
+      - "LICENSE"
+      - ".gitignore"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "agents/**"
+      - "LICENSE"
+      - ".gitignore"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.compiler }} / ${{ matrix.preset }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        # Sanitizers + warnings as errors in one build per compiler.
+        preset: [debug-sanitizers-strict]
+
+    env:
+      CC: ${{ matrix.compiler == 'gcc' && 'gcc' || 'clang' }}
+      CXX: ${{ matrix.compiler == 'gcc' && 'g++' || 'clang++' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # libcurl + OpenSSL: cpr uses the system curl (CPR_USE_SYSTEM_CURL=ON)
+      # and needs an SSL backend. libclang-rt: clang's sanitizer runtimes.
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build ccache mold libcurl4-openssl-dev libssl-dev libclang-rt-18-dev
+
+      # Dependency sources are reused when their stamp (URL, TAG, PATCH) matches,
+      # so a stale cache only costs a re-fetch of the deps that changed.
+      - name: Cache dependency sources
+        uses: actions/cache@v4
+        with:
+          path: .deps
+          key: deps-${{ hashFiles('cmake/deps.cmake', 'cmake/configs/malloc.cmake', 'cmake/patches/**') }}
+          restore-keys: deps-
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: .cache/ccache
+          key: ccache-${{ matrix.compiler }}-${{ matrix.preset }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.compiler }}-${{ matrix.preset }}-
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }}

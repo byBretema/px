@@ -113,5 +113,68 @@
     {"name": "release-asan-strict", "inherits": ["asan", "werror", "rel_san", "base"]},
     {"name": "release-ubsan-strict", "inherits": ["ubsan", "werror", "rel_san", "base"]},
     {"name": "release-sanitizers-strict", "inherits": ["san", "werror", "rel_san", "base"]}
+  ],
+  "buildPresets": [
+    {"name": "debug", "configurePreset": "debug"},
+    {"name": "debug-asan", "configurePreset": "debug-asan"},
+    {"name": "debug-ubsan", "configurePreset": "debug-ubsan"},
+    {"name": "debug-sanitizers", "configurePreset": "debug-sanitizers"},
+    {"name": "debug-strict", "configurePreset": "debug-strict"},
+    {"name": "debug-asan-strict", "configurePreset": "debug-asan-strict"},
+    {"name": "debug-ubsan-strict", "configurePreset": "debug-ubsan-strict"},
+    {"name": "debug-sanitizers-strict", "configurePreset": "debug-sanitizers-strict"},
+    {"name": "profile", "configurePreset": "profile"},
+    {"name": "profile-asan", "configurePreset": "profile-asan"},
+    {"name": "profile-ubsan", "configurePreset": "profile-ubsan"},
+    {"name": "profile-sanitizers", "configurePreset": "profile-sanitizers"},
+    {"name": "profile-strict", "configurePreset": "profile-strict"},
+    {"name": "profile-asan-strict", "configurePreset": "profile-asan-strict"},
+    {"name": "profile-ubsan-strict", "configurePreset": "profile-ubsan-strict"},
+    {"name": "profile-sanitizers-strict", "configurePreset": "profile-sanitizers-strict"},
+    {"name": "release", "configurePreset": "release"},
+    {"name": "release-asan", "configurePreset": "release-asan"},
+    {"name": "release-ubsan", "configurePreset": "release-ubsan"},
+    {"name": "release-sanitizers", "configurePreset": "release-sanitizers"},
+    {"name": "release-strict", "configurePreset": "release-strict"},
+    {"name": "release-asan-strict", "configurePreset": "release-asan-strict"},
+    {"name": "release-ubsan-strict", "configurePreset": "release-ubsan-strict"},
+    {"name": "release-sanitizers-strict", "configurePreset": "release-sanitizers-strict"}
+  ],
+  "testPresets": [
+    {
+      "hidden": true,
+      "name": "test-base",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "jobs": 8
+      }
+    },
+    {"name": "debug", "configurePreset": "debug", "inherits": ["test-base"]},
+    {"name": "debug-asan", "configurePreset": "debug-asan", "inherits": ["test-base"]},
+    {"name": "debug-ubsan", "configurePreset": "debug-ubsan", "inherits": ["test-base"]},
+    {"name": "debug-sanitizers", "configurePreset": "debug-sanitizers", "inherits": ["test-base"]},
+    {"name": "debug-strict", "configurePreset": "debug-strict", "inherits": ["test-base"]},
+    {"name": "debug-asan-strict", "configurePreset": "debug-asan-strict", "inherits": ["test-base"]},
+    {"name": "debug-ubsan-strict", "configurePreset": "debug-ubsan-strict", "inherits": ["test-base"]},
+    {"name": "debug-sanitizers-strict", "configurePreset": "debug-sanitizers-strict", "inherits": ["test-base"]},
+    {"name": "profile", "configurePreset": "profile", "inherits": ["test-base"]},
+    {"name": "profile-asan", "configurePreset": "profile-asan", "inherits": ["test-base"]},
+    {"name": "profile-ubsan", "configurePreset": "profile-ubsan", "inherits": ["test-base"]},
+    {"name": "profile-sanitizers", "configurePreset": "profile-sanitizers", "inherits": ["test-base"]},
+    {"name": "profile-strict", "configurePreset": "profile-strict", "inherits": ["test-base"]},
+    {"name": "profile-asan-strict", "configurePreset": "profile-asan-strict", "inherits": ["test-base"]},
+    {"name": "profile-ubsan-strict", "configurePreset": "profile-ubsan-strict", "inherits": ["test-base"]},
+    {"name": "profile-sanitizers-strict", "configurePreset": "profile-sanitizers-strict", "inherits": ["test-base"]},
+    {"name": "release", "configurePreset": "release", "inherits": ["test-base"]},
+    {"name": "release-asan", "configurePreset": "release-asan", "inherits": ["test-base"]},
+    {"name": "release-ubsan", "configurePreset": "release-ubsan", "inherits": ["test-base"]},
+    {"name": "release-sanitizers", "configurePreset": "release-sanitizers", "inherits": ["test-base"]},
+    {"name": "release-strict", "configurePreset": "release-strict", "inherits": ["test-base"]},
+    {"name": "release-asan-strict", "configurePreset": "release-asan-strict", "inherits": ["test-base"]},
+    {"name": "release-ubsan-strict", "configurePreset": "release-ubsan-strict", "inherits": ["test-base"]},
+    {"name": "release-sanitizers-strict", "configurePreset": "release-sanitizers-strict", "inherits": ["test-base"]}
   ]
 }
