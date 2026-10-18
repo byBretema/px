@@ -105,7 +105,6 @@ Each of these breaks a common workflow today.
   - GCC < 12.1 rejects `-fuse-ld=mold`. Use `check_linker_flag`, or `CMAKE_LINKER_TYPE` once min is 3.29.
 - [x] **C26 `PATCH` path is fragile** (Fixed 2026-10-16, with C4: commit SHAs supported, PATCH runs once per fetch and is documented)
 - [ ] **C27 justfile nits** (2026-10-18: `build`/`test` use `--preset`; `test` got `pipefail`, it used to exit 0 on failing tests)
-  - `_list_all` calls missing recipe `_list_base` (`just list all` fails).
   - `run` uses `find -perm -u+x` (no Windows).
 - [ ] **C28 Docs drift in comments** — `warnings.cmake:11` (`/Zc:preprocessor` is not two-phase lookup; that's `/permissive-`), `defaults.cmake:36` (says "Set modules flags" but disables scanning), `-Wno-float-equal` / `-Wno-c++98-compat*` disable warnings that are never enabled.
 - [ ] **C29 Every target links every dep** — `all_dependencies`

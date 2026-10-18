@@ -38,7 +38,7 @@ Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest -
 
 - Configure + build + test with `debug-strict` (warnings as errors) and `debug-sanitizers` after CMake or C++ changes.
 - CI (`.github/workflows/ci.yml`) runs `debug-sanitizers-strict` on Ubuntu 24.04 with GCC and Clang, using plain CMake presets. Skipped for doc-only changes (`*.md`, `agents/`, `LICENSE`, `.gitignore`).
-- Read the configure log: the wrapper prints a section per stage (`Toolchain`, `Fulfilling dependencies`, `Setup`, `Export`).
+- Read the configure log: the wrapper prints a section per stage (`Toolchain`, `Dependencies`, `Export`).
 
 ## Gotchas
 

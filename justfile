@@ -54,15 +54,17 @@ _list_:
     @just _print_list "Available tests" "{{ _tests }}"
 
 _list_all:
-    @just _list_base
-    @echo "Available presets:"
-    @cd "{{ _root }}" && cmake --list-presets 2>/dev/null | awk -F'"' '/^[[:space:]]+"/ {print $2}' | while read -r p; do [ -n "$p" ] && echo "    $p"; done
+    @just _list_
+    @echo "Available presets (* active):"
+    @cd "{{ _root }}" && cmake --list-presets 2>/dev/null | awk -F'"' '/^[[:space:]]+"/ {print $2}' | while read -r p; do [ "$p" = "{{ preset }}" ] && echo "  * $p" || echo "    $p"; done
     @echo
 
 # --- Config ---
 
 [private]
 config:
+    @echo
+    @echo "- - - - - - - - - - - - - - - - - [  CONFIG ] - - - - - - - - - - - - - - - - -"
     @cmake -S "{{ _root }}" --preset {{ preset }} {{ config_flags }}
 
 # --- Per target ---
@@ -71,7 +73,11 @@ config:
 [no-exit-message]
 build *targets: config
     #!/usr/bin/env bash
-    set -eu; echo
+    set -eu;
+    echo
+    echo "- - - - - - - - - - - - - - - - - [  BUILD  ] - - - - - - - - - - - - - - - - -"
+    echo
+
     cmake_args=()
     [[ -n "{{ build_flags }}" ]] && cmake_args+=({{ build_flags }})
     [[ -n "{{ targets }}"     ]] && cmake_args+=(--target {{ targets }})
@@ -80,7 +86,10 @@ build *targets: config
 [no-exit-message]
 run target *args: (build target)
     #!/usr/bin/env bash
-    set -eu; echo
+    set -eu;
+    echo
+    echo "- - - - - - - - - - - - - - - - - [   RUN   ] - - - - - - - - - - - - - - - - -"
+    echo
     bin="$(find "$(sed -n 2p "{{ _active }}")" -type f -name "{{ target }}" -perm -u+x 2>/dev/null | head -1)"
     if [[ -z "$bin" ]]; then
         echo "no executable found for target '{{ target }}'"
