@@ -61,17 +61,30 @@ _list_all:
 
 # --- Config ---
 
-[private]
+# Always configures (e.g. after editing CMakePresets.json)
 config:
     @echo
     @echo "- - - - - - - - - - - - - - - - - [  CONFIG ] - - - - - - - - - - - - - - - - -"
     @cmake -S "{{ _root }}" --preset {{ preset }} {{ config_flags }}
 
+# Configures only on first use, preset switch or config_flags; otherwise
+# `cmake --build` re-runs CMake by itself when CMake files change.
+[private]
+_config:
+    #!/usr/bin/env bash
+    set -eu
+    active="$(sed -n 1p "{{ _active }}" 2>/dev/null || true)"
+    dir="$(sed -n 2p "{{ _active }}" 2>/dev/null || true)"
+    if [[ "{{ preset }}" == "$active" && -f "$dir/CMakeCache.txt" && -z "{{ config_flags }}" ]]; then
+        exit 0
+    fi
+    just preset="{{ preset }}" config_flags="{{ config_flags }}" config
+
 # --- Per target ---
 
 # list... / empty == all
 [no-exit-message]
-build *targets: config
+build *targets: _config
     #!/usr/bin/env bash
     set -eu;
     echo

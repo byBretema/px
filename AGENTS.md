@@ -18,7 +18,8 @@
 
 All via `just` (bash). Build dirs `.build/<group>/`, deps sources `.deps/`, ccache `.cache/` (ccache `cache_dir` passed by CMake, no env needed).
 
-- `just build [targets...]`: configure + build the active preset (last used, default `debug`).
+- `just build [targets...]`: build the active preset (last used, default `debug`). Configures only on first use, preset switch or `config_flags=...`; otherwise `cmake --build` re-runs CMake itself when CMake files or globbed dirs change.
+- `just config`: force a configure (e.g. after editing `CMakePresets.json`, which ninja does not track).
 - `just preset=profile-strict build`: switch preset; later `just build/run/test` reuse it.
 - Presets: `{debug,profile,release}[-asan|-ubsan|-sanitizers][-strict]` (`cmake --list-presets`).
 - `just test [tests...]`: build + run CTest.
