@@ -10,7 +10,7 @@
 - `cmake/utils/importer.cmake`: `import_dependency()` (FetchContent wrapper) and the `all_dependencies` target.
 - `cmake/utils/scaffolding.cmake`: `make_exe`, `make_lib`, `make_hlib`, `make_test`, `setup_testing`, `setup_export`.
 - `cmake/configs/*.cmake`: one concern per file (options, warnings, sanitizers, ccache, mold, mimalloc, LTO/defaults).
-- `projects/<name>/`: one target per dir; sources are globbed non-recursively from the dir itself.
+- `projects/<name>/`: one target per dir; every source in the dir tree (subdirs included) is compiled. Code that must not be compiled lives outside `projects/`; nested `CMakeLists.txt` is an error.
 - `tests/<name>/`: test executables (`make_test`), registered with CTest.
 - `vendor/`: drop-in third-party headers, on the include path of every target.
 

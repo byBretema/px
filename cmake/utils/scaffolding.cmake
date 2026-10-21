@@ -10,13 +10,21 @@ set(__export_namespace "${PROJECT_NAME}" CACHE INTERNAL "Namespace for install t
 set(__export_targets "" CACHE INTERNAL "Targets registered for export")
 
 
+# One target = its whole directory tree: every source under `root_dir` is
+# compiled, nothing is listed by hand. Code that must not be compiled lives
+# outside the target dir; a nested CMakeLists.txt (second target) is an error.
 function(__glob_sources root_dir out_sources out_headers)
 
-  file(GLOB _sources CONFIGURE_DEPENDS
+  file(GLOB_RECURSE _nested CONFIGURE_DEPENDS "${root_dir}/*/CMakeLists.txt")
+  if(_nested)
+    log_fatal("one target per directory: move nested target(s) out of ${root_dir}: ${_nested}")
+  endif()
+
+  file(GLOB_RECURSE _sources CONFIGURE_DEPENDS
     "${root_dir}/*.cpp" "${root_dir}/*.cc" "${root_dir}/*.c" "${root_dir}/*.cxx")
   set(${out_sources} ${_sources} PARENT_SCOPE)
 
-  file(GLOB _headers CONFIGURE_DEPENDS
+  file(GLOB_RECURSE _headers CONFIGURE_DEPENDS
     "${root_dir}/*.hpp" "${root_dir}/*.hh" "${root_dir}/*.h" "${root_dir}/*.hxx")
   set(${out_headers} ${_headers} PARENT_SCOPE)
 

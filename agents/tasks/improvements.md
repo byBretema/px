@@ -90,7 +90,8 @@ Each of these breaks a common workflow today.
 
 - [ ] **C19 Glob manifest adds little** — `cmake/utils/manifest.cmake`, `CMakeLists.txt:18-20`
   - Manifest is rewritten at the end of every configure, so `check_manifest` only reports what `CONFIGURE_DEPENDS` already handled; `stale-check` in CI never fails after a fresh configure. Scan is recursive while `__glob_sources` is not, so files in subdirs are tracked but never compiled.
-  - Decide: remove (YAGNI), or make globs recursive and compare against the glob results instead of a rescan.
+  - 2026-10-21: source globs are now recursive, so manifest and build agree on which files exist. Still mostly redundant with `CONFIGURE_DEPENDS`.
+  - Decide: remove (YAGNI), or compare against the actual glob results instead of a rescan.
 - [ ] **C20 `stale-check.cmake` root walk can loop forever** — `cmake/stale-check.cmake:24`
   - `get_filename_component(DIRECTORY)` of `/` is `/`, never `""`. Compare against previous value. Error message names `build_dir` instead of the script dir. Missing manifest exits 0 (CI passes with no build).
 - [ ] **C21 Root-dir assumptions break use as a subproject**

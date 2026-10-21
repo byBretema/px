@@ -39,7 +39,7 @@
 
 - Library headers: recursive glob into a `FILE_SET HEADERS` (dir is the include root); installed to `include/<ns>/<target>/`
 - Libraries link deps as `$<BUILD_INTERFACE:all_dependencies>`; deps never appear in the export
-- Sources: non-recursive glob of `*.cpp *.cc *.c *.cxx` + headers in the target dir
+- Sources: recursive glob of `*.cpp *.cc *.c *.cxx` + headers over the whole target dir (no hand-listed sources); nested `CMakeLists.txt` is a configure error
 
 ## Modules
 
