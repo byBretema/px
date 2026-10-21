@@ -24,7 +24,7 @@ option(FORCE_ERROR "Treat compiler warnings as errors" OFF)
 # Vars
 
 set(DEPS_DIR        "$ENV{DEPS_DIR}" CACHE PATH   "Directory where FetchContent dependencies are stored")
-set(DEPS_BUILD_TYPE "Release"        CACHE STRING "Build type for FetchContent dependencies"            )
+set(DEPS_BUILD_TYPE "Release"        CACHE STRING "Build type for FetchContent dependencies (single-config generators only)")
 
 if(NOT DEPS_DIR)
   set(DEPS_DIR "${CMAKE_SOURCE_DIR}/.deps" CACHE PATH "" FORCE)

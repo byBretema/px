@@ -19,12 +19,14 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 # CMAKE_BUILD_TYPE + CMAKE_DEBUG_POSTFIX, producing mismatched filenames when
 # deps are built as Release while the project is Debug.
 
-# LTO on optimized builds
-if(CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$")
+# LTO on optimized builds. Per-config variables, so multi-config generators
+# don't get LTO in Debug.
+if(__multi_config OR CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$")
   include(CheckIPOSupported)
   check_ipo_supported(RESULT _ipo_supported OUTPUT _ipo_error)
   if(_ipo_supported)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
   else()
     message(WARNING "IPO/LTO requested but not supported: ${_ipo_error}")
   endif()

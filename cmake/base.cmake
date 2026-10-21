@@ -39,17 +39,26 @@ macro(post_project)
 
   include(${__base_dir}/utils/scaffolding.cmake)
 
-  if(NOT CMAKE_BUILD_TYPE)
+  # Multi-config generators (VS, Xcode, Ninja Multi-Config) ignore
+  # CMAKE_BUILD_TYPE: the config is picked at build time (--config).
+  get_property(__multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(NOT __multi_config AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
   endif()
 
   log_ln()
   log_status("Project -> ${PROJECT_NAME}")
 
-  if(ACTIVE_PRESET)
-    log_status("Preset  -> ${ACTIVE_PRESET} (${CMAKE_BUILD_TYPE}, ${CMAKE_BINARY_DIR})")
+  if(__multi_config)
+    string(JOIN "/" __build_type ${CMAKE_CONFIGURATION_TYPES})
+    set(__build_type "multi-config: ${__build_type}")
   else()
-    log_status("Preset  -> none")
+    set(__build_type "${CMAKE_BUILD_TYPE}")
+  endif()
+  if(ACTIVE_PRESET)
+    log_status("Preset  -> ${ACTIVE_PRESET} (${__build_type}, ${CMAKE_BINARY_DIR})")
+  else()
+    log_status("Preset  -> none (${__build_type})")
   endif()
 
   # Toolchain: must precede deps so they inherit it

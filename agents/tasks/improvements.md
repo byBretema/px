@@ -58,10 +58,10 @@ Each of these breaks a common workflow today.
 - [x] **C14 Generated Config.cmake lacks `find_dependency`** (Fixed 2026-10-16)
   - `include(CMakeFindDependencyMacro)` when `DEPS` given, `check_required_components(<ns>)`, dropped the redundant `_FOUND`. Verified with `setup_export(DEPS Threads)`.
 - [x] **C15 Fetch guard is dead code** (Fixed 2026-10-16, with C4: guard, `CMAKE_ARGS`, `CMP0135` removed)
-- [ ] **C16 Dead/ineffective state in `base.cmake`** (Verified)
+- [x] **C16 Dead/ineffective state in `base.cmake`** (Fixed 2026-10-21)
   - ~~`unset(__pre_project_invoked)` clears the normal var only; the `CACHE INTERNAL` entry persists, so the missing-`pre_project()` warning never fires after the first configure.~~ Fixed 2026-10-21: plain `__pre_project_done` var (renamed so stale cache entries can't mask it).
   - ~~`CMAKE_DISABLE_IN_SOURCE_BUILD` redundant with the explicit in-source check.~~ Removed 2026-10-21. `CMAKE_DISABLE_SOURCE_CHANGES` kept (decided 2026-10-21): with recursive globs, files generated into a project dir would be compiled; the flag makes that a configure error. Cost: the `compile_commands` stamp.
-  - Default `CMAKE_BUILD_TYPE` should be skipped for multi-config generators (`CMAKE_CONFIGURATION_TYPES`).
+  - Multi-config `CMAKE_BUILD_TYPE`: fixed 2026-10-21. No default on multi-config generators; LTO via `CMAKE_INTERPROCEDURAL_OPTIMIZATION_{RELEASE,RELWITHDEBINFO}`; `DEPS_BUILD_TYPE` skipped there (deps build with the selected config); log shows the config list.
 - [x] **C17 `import_dependency` OPTIONS that are no-ops** (Fixed 2026-10-18)
   - New `DEFINES` arg: INTERFACE compile definitions on `all_dependencies` (px-owned; dep targets are never modified). Consumer side only; ABI-affecting macros of compiled deps belong in OPTIONS. asio uses `DEFINES ASIO_STANDALONE ASIO_NO_DEPRECATED`, verified on consumer compile lines. OPTIONS on a dep without CMakeLists.txt now warn.
 - [x] **C18 INTERFACE dep targets skipped when linking** (Fixed 2026-10-18)
@@ -119,7 +119,7 @@ Each of these breaks a common workflow today.
 - [ ] **MF3** CPack packaging
 - [ ] **MF4** Feature detection (`check_*`), clang-tidy/cppcheck hooks
 - [ ] **MF5** Minimum compiler version validation
-- [ ] **MF6** Multi-config generator handling (`CMAKE_BUILD_TYPE` checks, compile_commands, ctest `-C`)
+- [ ] **MF6** Multi-config generator handling (compile_commands, ctest `-C`; build-type checks done in C16)
 - [ ] **MF7** `try_compile` / C++23 feature validation
 - [x] **MF8** CI presets: `buildPresets`, `testPresets` for every configure preset (2026-10-18); test presets use `noTestsAction: error`
 - [ ] **MF9** `find_package` fallback for system deps (ref: `CPMFindPackage`, FetchContent `FIND_PACKAGE_ARGS`)

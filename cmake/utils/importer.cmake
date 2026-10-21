@@ -297,7 +297,8 @@ function(import_dependency qualified_target)
   #   value is invisible to add_subdirectory when a non-cache variable
   #   (set during project()) already exists in the calling scope. Worse,
   #   FORCE-writing the cache can trigger a cmake reconfigure loop.
-  if(_dep_build_type)
+  # Multi-config generators build deps with the selected config instead.
+  if(_dep_build_type AND NOT __multi_config)
     set(CMAKE_BUILD_TYPE "${_dep_build_type}")
   endif()
 
