@@ -46,7 +46,7 @@ Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest -
 - Known bugs and backlog: `agents/tasks/improvements.md`. Read it before touching `cmake/`.
 - `compile_commands.json` reaches the source root via the `compile_commands` target (part of `ALL`). `cmake --build --target <x>` alone does not refresh it.
 - Build dir groups: `.build/<debug|profile|release>[_san]`. Presets in the same group (e.g. `debug`/`debug-strict`, `debug-asan`/`debug-ubsan`) share a dir and rebuild when switched.
-- `.build/active_preset` (written by CMake at configure): line 1 preset (just's default), line 2 build dir (used by `just run` / `stale-check`). `just build`/`test` call `cmake --build --preset` / `ctest --preset`.
+- `.build/active_preset` (written by CMake at configure): line 1 preset (just's default), line 2 build dir (used by `just run`). `just build`/`test` call `cmake --build --preset` / `ctest --preset`.
 - ccache, mold, PIC, output dirs apply to deps too; visibility, warnings, LTO, C++ standard apply to own targets only.
 - Changing a dep's URL, `TAG` or `PATCH` file re-fetches that dep on next configure; no `just clean deps` needed. A re-fetch refuses to wipe local edits in `.deps/<id>-src`; the error prints the commands to capture them as `cmake/patches/<ns>.patch` (see `cmake/patches/README.md`).
 - Installed package: px headers/libs only (no deps), headers at `include/<ns>/<target>/`. Installed STATIC libs that use compiled deps can't be linked by consumers (deps are not installed).

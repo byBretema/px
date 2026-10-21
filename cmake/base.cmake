@@ -17,7 +17,7 @@ macro(pre_project)
     message(FATAL_ERROR "In-source builds are forbidden. Use -B build")
   endif()
 
-  set(__pre_project_invoked ON CACHE INTERNAL "'pre_project' invoked correctly")
+  set(__pre_project_done ON)
 
   # Set by CMakePresets.json. Lets tools (justfile) reuse the last configured
   # preset and find its build dir: line 1 = preset, line 2 = binary dir.
@@ -32,10 +32,10 @@ macro(post_project)
 
   log_level_restore()
 
-  if(NOT DEFINED __pre_project_invoked)
+  if(NOT __pre_project_done)
     log_warning("Missing 'pre_project()' call.")
   endif()
-  unset(__pre_project_invoked)
+  unset(__pre_project_done)
 
   include(${__base_dir}/utils/scaffolding.cmake)
 
@@ -78,9 +78,9 @@ macro(post_project)
   include(${__base_dir}/configs/defaults.cmake)
   include(${__base_dir}/configs/warnings.cmake)
   include(${__base_dir}/configs/sanitizers.cmake)
-  include(${__base_dir}/utils/manifest.cmake)
 
+  # Generated files must go to the build dir: in a globbed project dir they
+  # would be compiled. Set last, so the deps/active_preset writes above pass.
   set(CMAKE_DISABLE_SOURCE_CHANGES ON)
-  set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
 endmacro()

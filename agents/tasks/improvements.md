@@ -59,8 +59,8 @@ Each of these breaks a common workflow today.
   - `include(CMakeFindDependencyMacro)` when `DEPS` given, `check_required_components(<ns>)`, dropped the redundant `_FOUND`. Verified with `setup_export(DEPS Threads)`.
 - [x] **C15 Fetch guard is dead code** (Fixed 2026-10-16, with C4: guard, `CMAKE_ARGS`, `CMP0135` removed)
 - [ ] **C16 Dead/ineffective state in `base.cmake`** (Verified)
-  - `unset(__pre_project_invoked)` clears the normal var only; the `CACHE INTERNAL` entry persists, so the missing-`pre_project()` warning never fires after the first configure. Use a plain variable.
-  - `CMAKE_DISABLE_SOURCE_CHANGES` / `CMAKE_DISABLE_IN_SOURCE_BUILD` are undocumented. `CMAKE_DISABLE_SOURCE_CHANGES` is enforced at generate time (it rejected a custom command output in the source root, hence the stamp in C1); `CMAKE_DISABLE_IN_SOURCE_BUILD` is redundant with the explicit in-source check. Decide whether to keep the former; remove the latter.
+  - ~~`unset(__pre_project_invoked)` clears the normal var only; the `CACHE INTERNAL` entry persists, so the missing-`pre_project()` warning never fires after the first configure.~~ Fixed 2026-10-21: plain `__pre_project_done` var (renamed so stale cache entries can't mask it).
+  - ~~`CMAKE_DISABLE_IN_SOURCE_BUILD` redundant with the explicit in-source check.~~ Removed 2026-10-21. `CMAKE_DISABLE_SOURCE_CHANGES` kept (decided 2026-10-21): with recursive globs, files generated into a project dir would be compiled; the flag makes that a configure error. Cost: the `compile_commands` stamp.
   - Default `CMAKE_BUILD_TYPE` should be skipped for multi-config generators (`CMAKE_CONFIGURATION_TYPES`).
 - [x] **C17 `import_dependency` OPTIONS that are no-ops** (Fixed 2026-10-18)
   - New `DEFINES` arg: INTERFACE compile definitions on `all_dependencies` (px-owned; dep targets are never modified). Consumer side only; ABI-affecting macros of compiled deps belong in OPTIONS. asio uses `DEFINES ASIO_STANDALONE ASIO_NO_DEPRECATED`, verified on consumer compile lines. OPTIONS on a dep without CMakeLists.txt now warn.
@@ -88,14 +88,14 @@ Each of these breaks a common workflow today.
   - Severity choice: a dirty cache hit is also the legit "hack a dep to debug" workflow, so warn there (and keep the re-fetch path fatal, as in C4). A `DEPS_STRICT`-style option could turn the warning fatal for CI.
   - Recommendation: A, as a warning, listing the changed files.
 
-- [ ] **C19 Glob manifest adds little** — `cmake/utils/manifest.cmake`, `CMakeLists.txt:18-20`
+- [x] **C19 Glob manifest adds little** (Fixed 2026-10-21: `manifest.cmake`, `stale-check.cmake` and `just stale-check` removed; `CONFIGURE_DEPENDS` covers it) — `cmake/utils/manifest.cmake`, `CMakeLists.txt:18-20`
   - Manifest is rewritten at the end of every configure, so `check_manifest` only reports what `CONFIGURE_DEPENDS` already handled; `stale-check` in CI never fails after a fresh configure. Scan is recursive while `__glob_sources` is not, so files in subdirs are tracked but never compiled.
   - 2026-10-21: source globs are now recursive, so manifest and build agree on which files exist. Still mostly redundant with `CONFIGURE_DEPENDS`.
   - Decide: remove (YAGNI), or compare against the actual glob results instead of a rescan.
-- [ ] **C20 `stale-check.cmake` root walk can loop forever** — `cmake/stale-check.cmake:24`
+- [x] **C20 `stale-check.cmake` root walk can loop forever** (Fixed 2026-10-21: script removed with C19) — `cmake/stale-check.cmake:24`
   - `get_filename_component(DIRECTORY)` of `/` is `/`, never `""`. Compare against previous value. Error message names `build_dir` instead of the script dir. Missing manifest exits 0 (CI passes with no build).
 - [ ] **C21 Root-dir assumptions break use as a subproject**
-  - `CMAKE_SOURCE_DIR` used for vendor, ccache dir, compile_commands copy, manifest. Use `PROJECT_SOURCE_DIR`; gate `add_subdirectory(tests)` on `PROJECT_IS_TOP_LEVEL` (or `BUILD_TESTING`).
+  - `CMAKE_SOURCE_DIR` used for vendor, ccache dir, compile_commands copy. Use `PROJECT_SOURCE_DIR`; gate `add_subdirectory(tests)` on `PROJECT_IS_TOP_LEVEL` (or `BUILD_TESTING`).
 - [x] **C22 `setup_export(NAMESPACE)` mismatch** (Fixed 2026-10-16, with C5: install include dir is computed in `setup_export`)
 - [ ] **C23 mimalloc helper issues** — `cmake/configs/malloc.cmake`
   - `${mimalloc_BINARY_DIR}` is undefined (project is `libmimalloc`, fetch id `microsoft_mimalloc`); use `$<TARGET_FILE_DIR:mimalloc>`.

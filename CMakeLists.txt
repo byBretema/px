@@ -14,9 +14,4 @@ add_subdirectory(tests)
 
 setup_export()
 
-# --- Glob staleness check ---
-set(_manifest "${CMAKE_BINARY_DIR}/glob_manifest.txt")
-check_manifest("${_manifest}")
-write_manifest("${_manifest}")
-
 log_header("Done!")
