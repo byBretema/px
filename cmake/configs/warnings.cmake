@@ -8,7 +8,7 @@ function(setup_warnings project_name)
   #        (not warnings, but required for correct modern C++ behaviour on MSVC)
 
   set(MSVC_OPTIONS
-    /Zc:preprocessor  # conforming preprocessor (two-phase name lookup)
+    /Zc:preprocessor  # standard-conforming preprocessor
     /utf-8            # source + execution character set = UTF-8
   )
 
@@ -17,7 +17,7 @@ function(setup_warnings project_name)
 
   set(MSVC_WARNINGS
     /W4               # warning level 4 (reasonable maximum)
-    /permissive-      # strict standards conformance
+    /permissive-      # strict standards conformance (incl. two-phase name lookup)
 
     /w14242           # C4242 — conversion from 'T1' to 'T2', possible loss of data
     /w14254           # C4254 — 'operator': conversion from 'T1' to 'T2', possible loss of data
@@ -50,13 +50,11 @@ function(setup_warnings project_name)
     -Wsign-conversion
     -Wshadow
     -Wcast-align
-    -Wunused
     -Wnull-dereference
     -Wformat=2
     -Wundef
     -Wdouble-promotion
     -Wimplicit-fallthrough
-    -Wno-float-equal
     # C++ only: GCC rejects these for C sources ("valid for C++ but not for C")
     $<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor;-Wold-style-cast;-Woverloaded-virtual>
   )
@@ -65,9 +63,6 @@ function(setup_warnings project_name)
 
   set(CLANG_WARNINGS
     ${COMMON_WARNINGS}
-    -Wno-c++98-compat
-    -Wno-c++98-compat-pedantic
-    -Wno-language-extension-token
   )
 
   # GCC only
@@ -79,7 +74,6 @@ function(setup_warnings project_name)
     -Wduplicated-branches
     -Wlogical-op
     $<$<COMPILE_LANGUAGE:CXX>:-Wuseless-cast>
-    -Wno-strict-aliasing
   )
 
   # Enable compiling warnings as errors by default (based on exposed option)

@@ -8,9 +8,6 @@ option(USE_CCACHE           "Enable ccache build caching" ON  )
 option(USE_MOLD             "Use mold linker"             ON  )
 option(USE_COMPILE_COMMANDS "Use CompileCommands.json"    ON  )
 
-# NOTE: Usually better for very fragmented memory, bad for large chunks of memory
-option(USE_MIMALLOC         "Use mimalloc allocator"      OFF )
-
 # Options: Enable
 
 option(ENABLE_ASAN  "Enable address sanitizer"             OFF)

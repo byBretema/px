@@ -6,8 +6,23 @@
 include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/logger.cmake)
 
-set(__export_namespace "${PROJECT_NAME}" CACHE INTERNAL "Namespace for install targets")
-set(__export_targets "" CACHE INTERNAL "Targets registered for export")
+
+# Export list per project (global property: written from target subdirs,
+# read by setup_export; separate lists when px projects are nested).
+function(__register_export name)
+  set_property(GLOBAL APPEND PROPERTY __px_export_${PROJECT_NAME} ${name})
+endfunction()
+
+
+# `just run` reads an executable's path from <build>/exe/<name> instead of
+# searching the build dir (suffixed -<config> on multi-config generators).
+function(__write_exe_path name)
+  set(out "${CMAKE_BINARY_DIR}/exe/${name}")
+  if(__multi_config)
+    string(APPEND out "-$<CONFIG>")
+  endif()
+  file(GENERATE OUTPUT "${out}" CONTENT "$<TARGET_FILE:${name}>")
+endfunction()
 
 
 # One target = its whole directory tree: every source under `root_dir` is
@@ -53,13 +68,13 @@ function(make_exe name)
 
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/vendor>)
 
   setup_warnings(${name})
   setup_sanitizers(${name})
 
-  list(APPEND __export_targets ${name})
-  set(__export_targets "${__export_targets}" CACHE INTERNAL "")
+  __write_exe_path(${name})
+  __register_export(${name})
 
 endfunction()
 
@@ -68,6 +83,8 @@ function(make_lib name type)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_library(${name} ${type} ${_sources} ${ARGN})
+  # Same name in-tree (add_subdirectory) as installed (find_package).
+  add_library(${PROJECT_NAME}::${name} ALIAS ${name})
   __add_header_set(${name} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
   # Build-tree only: fetched deps are not installed, so the export must not
@@ -86,13 +103,12 @@ function(make_lib name type)
   endif()
 
   target_include_directories(${name} PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/vendor>)
 
   setup_warnings(${name})
   setup_sanitizers(${name})
 
-  list(APPEND __export_targets ${name})
-  set(__export_targets "${__export_targets}" CACHE INTERNAL "")
+  __register_export(${name})
 
 endfunction()
 
@@ -100,10 +116,10 @@ endfunction()
 function(make_lib_header_only name)
 
   add_library(${name} INTERFACE)
+  add_library(${PROJECT_NAME}::${name} ALIAS ${name})
   __add_header_set(${name} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-  list(APPEND __export_targets ${name})
-  set(__export_targets "${__export_targets}" CACHE INTERNAL "")
+  __register_export(${name})
 
 endfunction()
 
@@ -124,11 +140,12 @@ function(make_test name)
 
   target_include_directories(${name} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/vendor>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/vendor>)
 
   setup_warnings(${name})
   setup_sanitizers(${name})
 
+  __write_exe_path(${name})
   add_test(NAME ${name} COMMAND ${name})
 
 endfunction()
@@ -137,27 +154,42 @@ endfunction()
 # Macro, not function: enable_testing() sets CMAKE_TESTING_ENABLED in the
 # current scope, which a function would drop on return (no tests registered).
 macro(setup_testing)
-  if(PROJECT_IS_TOP_LEVEL)
-    log_header("Testing enabled")
-    enable_testing()
-  endif()
+  log_header("Testing enabled")
+  enable_testing()
 endmacro()
 
 
+# Namespace is PROJECT_NAME, matching the in-tree aliases of make_lib.
+# Install rules only for the top-level project: as a subproject, a parent's
+# `cmake --install` must not pick them up.
 function(setup_export)
 
-  cmake_parse_arguments(ARG "" "NAMESPACE" "DEPS" ${ARGN})
+  cmake_parse_arguments(ARG "" "" "DEPS" ${ARGN})
+  if(NOT PROJECT_IS_TOP_LEVEL)
+    return()
+  endif()
   log_header("Export")
 
-  if(ARG_NAMESPACE)
-    set(__export_namespace "${ARG_NAMESPACE}" CACHE INTERNAL "")
-  endif()
+  set(__export_namespace "${PROJECT_NAME}")
   set(export_set "${__export_namespace}-targets")
 
+  get_property(__export_targets GLOBAL PROPERTY __px_export_${PROJECT_NAME})
   if(NOT __export_targets)
     log_status("No targets registered for export")
     return()
   endif()
+
+  # Deps are not installed: an installed STATIC lib leaves their symbols
+  # unresolved for consumers (header-only deps and SHARED libs are fine).
+  get_property(compiled_deps GLOBAL PROPERTY __px_compiled_deps)
+  list(REMOVE_DUPLICATES compiled_deps)
+  foreach(target IN LISTS __export_targets)
+    get_target_property(type ${target} TYPE)
+    if(type STREQUAL "STATIC_LIBRARY" AND compiled_deps)
+      string(JOIN ", " deps ${compiled_deps})
+      log_warning("setup_export: installed STATIC lib '${target}' links compiled deps (${deps}), which are not installed: consumers of the package cannot link it. Make it SHARED or keep it free of compiled deps.")
+    endif()
+  endforeach()
 
   include(CMakePackageConfigHelpers)
 

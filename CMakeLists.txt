@@ -9,8 +9,11 @@ post_project()
 log_header("Sub Projects")
 add_subdirectory(projects)
 
-setup_testing()
-add_subdirectory(tests)
+# Tests are skipped when used as a subproject.
+if(PROJECT_IS_TOP_LEVEL)
+  setup_testing()
+  add_subdirectory(tests)
+endif()
 
 setup_export()
 

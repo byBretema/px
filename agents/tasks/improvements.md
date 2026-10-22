@@ -67,12 +67,12 @@ Each of these breaks a common workflow today.
 - [x] **C18 INTERFACE dep targets skipped when linking** (Fixed 2026-10-18)
   - Found targets are linked regardless of type. Only phmap was affected (its INTERFACE target carries nothing today), so latent.
   - Noticed: lookup misses deps whose targets use another namespace (utfcpp exports `utf8cpp::utf8cpp`, function2 `function2::function2`); they work through the include dir only. A `TARGET` arg to name the real target would close it if one ever carries usage requirements.
-- [ ] **C32 Installed static libs using compiled deps can't be linked** (Verified)
+- [x] **C32 Installed static libs using compiled deps can't be linked** (Mitigated 2026-10-22: documented + configure warning)
   - Deps are not installed (C6) and not in the export (C3), so a consumer of an installed `STATIC` px lib that calls into e.g. fmt gets `undefined reference to fmt::v11::vformat`. Header-only deps and SHARED libs are fine.
-  - Options: `find_dependency` + `$<LINK_ONLY:...>` against system/installed deps (needs MF9), install the compiled deps alongside, or document "install STATIC libs only when dep-free".
+  - `setup_export` now warns for each exported STATIC lib while compiled deps exist (recorded by `import_dependency` from the dep target's TYPE). Real fix (`find_dependency` against system deps, or installing deps) waits for MF9.
 - [x] **C33 SHARED px libs re-export symbols of static deps** (Fixed 2026-10-18)
   - `LINKER:--exclude-libs,ALL` on SHARED `make_lib` targets (not Apple/MSVC). Verified: fmt symbols exported by a test `libbaz.so` 100 before, 0 after; own API still exported.
-- [ ] **C34 macOS: SHARED px libs still re-export symbols of static deps** (Inspected) — `cmake/utils/scaffolding.cmake` (`make_lib`)
+- [ ] **C34 macOS: SHARED px libs still re-export symbols of static deps** (Inspected, on hold) — `cmake/utils/scaffolding.cmake` (`make_lib`)
   - The C33 fix (`--exclude-libs,ALL`) is skipped on Apple: ld64 has no such flag. Mach-O dylibs export every default-visibility symbol, including those of static deps linked in (fmt, cpr, EASTL, glm), so a px dylib can clash with or accidentally satisfy a consumer's own copy. Builds still work; it is a correctness/ODR risk, not a link failure.
   - Not an issue on Windows: DLLs export only `dllexport`'d symbols, and static deps carry none. MinGW (GNU ld auto-export) already gets the flag.
   - Options:
@@ -81,12 +81,8 @@ Each of these breaks a common workflow today.
     - `-Wl,-exported_symbols_list,<file>`: export only the lib's own API; needs a maintained list or one generated from the lib's objects.
     - Hidden visibility for static deps (`CXX_VISIBILITY_PRESET hidden` on their targets): cross-platform, but only reaches the target the lookup finds, not every target a dep creates.
   - Recommendation: `-load_hidden` over the static dep targets, verified on a Mac (`nm -gU libbaz.dylib | grep fmt` should be empty). Not attempted without one.
-- [ ] **C31 Damaged dep sources go unnoticed** — `cmake/utils/importer.cmake` (cache path)
-  - When the stamp matches, the source dir is trusted blindly: deleted or modified tracked files (partial `rm`, a tool writing into `.deps/`, a debugging edit left behind) are not detected. Build errors then point at the dep, not at the cause.
-  - Option A: run `git status --porcelain` on the cache path too. Measured on the 16 current deps: ~40 ms total warm, up to ~40 ms per large dep cold (range-v3, glaze, glm). Catches tracked-file deletions/edits; does not catch `.git` damage or added untracked files (those don't break builds).
-  - Option B: `git fsck` catches `.git` damage too, but costs seconds per configure. Not worth it.
-  - Severity choice: a dirty cache hit is also the legit "hack a dep to debug" workflow, so warn there (and keep the re-fetch path fatal, as in C4). A `DEPS_STRICT`-style option could turn the warning fatal for CI.
-  - Recommendation: A, as a warning, listing the changed files.
+- [x] **C31 Damaged dep sources go unnoticed** (Fixed 2026-10-22: warning) — `cmake/utils/importer.cmake` (cache path)
+  - Cache hits run `git status --porcelain --untracked-files=no` and warn with the changed files. Skipping untracked files is what keeps it cheap: measured on 15 deps, ~50 ms warm and cold, vs 1.7 s cold with the untracked walk. Not fatal: editing a dep to debug it is a legit workflow; the re-fetch path stays fatal (C4).
 
 - [x] **C19 Glob manifest adds little** (Fixed 2026-10-21: `manifest.cmake`, `stale-check.cmake` and `just stale-check` removed; `CONFIGURE_DEPENDS` covers it) — `cmake/utils/manifest.cmake`, `CMakeLists.txt:18-20`
   - Manifest is rewritten at the end of every configure, so `check_manifest` only reports what `CONFIGURE_DEPENDS` already handled; `stale-check` in CI never fails after a fresh configure. Scan is recursive while `__glob_sources` is not, so files in subdirs are tracked but never compiled.
@@ -94,25 +90,34 @@ Each of these breaks a common workflow today.
   - Decide: remove (YAGNI), or compare against the actual glob results instead of a rescan.
 - [x] **C20 `stale-check.cmake` root walk can loop forever** (Fixed 2026-10-21: script removed with C19) — `cmake/stale-check.cmake:24`
   - `get_filename_component(DIRECTORY)` of `/` is `/`, never `""`. Compare against previous value. Error message names `build_dir` instead of the script dir. Missing manifest exits 0 (CI passes with no build).
-- [ ] **C21 Root-dir assumptions break use as a subproject**
-  - `CMAKE_SOURCE_DIR` used for vendor, ccache dir, compile_commands copy. Use `PROJECT_SOURCE_DIR`; gate `add_subdirectory(tests)` on `PROJECT_IS_TOP_LEVEL` (or `BUILD_TESTING`).
+- [x] **C21 Root-dir assumptions break use as a subproject** (Fixed 2026-10-22)
+  - A px project can be `add_subdirectory`'d (or FetchContent'd) by a plain CMake project or by another px project. Verified both: parent links `px::core`; nested px skips its tests, install rules, `compile_commands` target and `active_preset` write.
+  - `make_lib`/`make_hlib` add a `<PROJECT_NAME>::<target>` alias, the same name the installed package exports. `setup_export(NAMESPACE)` removed: the namespace is always `PROJECT_NAME`, so in-tree and installed names match.
+  - `__base_dir` is a normal var and export lists are per-project global properties (were CACHE INTERNAL, shared by nested projects). `vendor/` from `PROJECT_SOURCE_DIR`. Parent output dirs are kept. `post_project` clears an inherited `CMAKE_DISABLE_SOURCE_CHANGES` (it blocked the ccache dir and dep stamps).
+  - Nested px projects share `all_dependencies` and deps: a dep imported twice in one configure keeps the first import (a different TAG warns instead of swapping sources under the first build).
+  - Limits: target names are global, so nested px projects need distinct target names; CMake functions are global, so the last-loaded px copy's `make_*`/`setup_export` win (keep px versions in sync).
 - [x] **C22 `setup_export(NAMESPACE)` mismatch** (Fixed 2026-10-16, with C5: install include dir is computed in `setup_export`)
-- [ ] **C23 mimalloc helper issues** — `cmake/configs/malloc.cmake`
-  - `${mimalloc_BINARY_DIR}` is undefined (project is `libmimalloc`, fetch id `microsoft_mimalloc`); use `$<TARGET_FILE_DIR:mimalloc>`.
-  - Warning suppressions re-applied to `mimalloc` on every `target_link_mimalloc` call; move next to the import.
-- [ ] **C24 Sanitizers on MSVC** — `cmake/configs/sanitizers.cmake`
-  - `-fsanitize=` passed to `link.exe` (ignored with LNK4044); UBSan unsupported. Add `-fno-omit-frame-pointer` for usable ASan traces.
-- [ ] **C25 mold flag not checked** — `cmake/configs/linker.cmake`
-  - GCC < 12.1 rejects `-fuse-ld=mold`. Use `check_linker_flag`, or `CMAKE_LINKER_TYPE` once min is 3.29.
+- [x] **C23 mimalloc helper issues** (Resolved 2026-10-22: mimalloc support removed: `USE_MIMALLOC`, `malloc.cmake`, `tests/test_malloc`; not a win in most cases)
+- [x] **C24 Sanitizers on MSVC** (Fixed 2026-10-22, not verified: no Windows) — `cmake/configs/sanitizers.cmake`
+  - MSVC: `/fsanitize=address` on compile only; `ENABLE_UBSAN` is a configure error; `/RTC*` stripped from own targets' Debug flags when ASan is on (incompatible; CMake 4.0's `CMAKE_MSVC_RUNTIME_CHECKS` would replace it).
+  - GCC/Clang: `-fno-omit-frame-pointer` with any sanitizer; `-fno-sanitize-recover=undefined` with UBSan. Found while reviewing: UBSan printed `runtime error:` and exited 0, so CI's sanitizer job passed on UB.
+- [x] **C25 mold flag not checked** (Fixed 2026-10-22) — `cmake/configs/linker.cmake`
+  - `check_linker_flag(CXX -fuse-ld=mold)` instead of the host-OS gate (also wrong when cross-compiling); skipped on MSVC. Stays on 3.28 (no `CMAKE_LINKER_TYPE`).
 - [x] **C26 `PATCH` path is fragile** (Fixed 2026-10-16, with C4: commit SHAs supported, PATCH runs once per fetch and is documented)
-- [ ] **C27 justfile nits** (2026-10-18: `build`/`test` use `--preset`; `test` got `pipefail`, it used to exit 0 on failing tests)
-  - `run` uses `find -perm -u+x` (no Windows).
-- [ ] **C28 Docs drift in comments** — `warnings.cmake:11` (`/Zc:preprocessor` is not two-phase lookup; that's `/permissive-`), `defaults.cmake:36` (says "Set modules flags" but disables scanning), `-Wno-float-equal` / `-Wno-c++98-compat*` disable warnings that are never enabled.
-- [ ] **C29 Every target links every dep** — `all_dependencies`
+- [x] **C27 justfile nits** (Fixed 2026-10-22; 2026-10-18: `build`/`test` use `--preset`, `test` got `pipefail`)
+  - `make_exe`/`make_test` write the executable's path to `<build>/exe/<name>` (`file(GENERATE)`, `$<TARGET_FILE>`; `-<config>` suffix on multi-config); `just run` reads it instead of `find -perm`.
+- [x] **C28 Docs drift in comments** (Fixed 2026-10-22)
+  - Fixed `/Zc:preprocessor` / `/permissive-` and module-scanning comments. Removed never-enabled `-Wno-float-equal`, `-Wno-c++98-compat*`, redundant `-Wunused`, and `-Wno-language-extension-token` / GCC `-Wno-strict-aliasing` (own code builds clean without them: Clang `debug-sanitizers-strict`, GCC `release-strict`).
+- [ ] **C35 Tests are no-ops in Release** (Verified 2026-10-22)
+  - Tests check with `assert()`, which `NDEBUG` removes: Release/RelWithDebInfo tests always pass, and `release-strict` fails to build `test_core` (`unused variable 'c_str'`, variables only used in asserts).
+  - Option: `make_test` adds `-UNDEBUG` (`/UNDEBUG` on MSVC), or tests use their own check macro.
+- [ ] **C29 Every target links every dep** (On hold) — `all_dependencies`
   - All compiled deps (fmt, cpr, EASTL, glm) link into every exe/test. Consider per-target `DEPS` args on `make_*`.
   - When doing this: `import_dependency` DEFINES currently land on `all_dependencies` (px-owned, so dep targets are never modified). Per-target linking must move them onto a px-owned handle per dep (e.g. `__dep_<ns>_<target>` linking the real target and holding SYSTEM includes + DEFINES), since `ns::target` is taken when the dep provides its own alias. Targets would then link those handles instead of `ns::target`.
 
 ## Missing features (carried over from `rework.md`)
+
+All open MF items on hold (2026-10-22). MF3 (CPack) is wanted next.
 
 - [ ] **MF1** Cross-compilation / toolchain support (ref: Corrosion, Hunter)
 - [ ] **MF2** `pkg-config` generation (ref: cmake-init)
@@ -131,6 +136,8 @@ Each of these breaks a common workflow today.
 
 ## Tooling / AI friendliness
 
+T1 on hold (2026-10-22).
+
 - [ ] **T1** `.clang-format` matching current style (2-space, attached braces), so style rules are enforced, not described.
 - [x] **T2** CI workflow (2026-10-18, `.github/workflows/ci.yml`: GitHub Actions, Ubuntu 24.04, {gcc, clang} x `debug-sanitizers-strict`, skipped for doc-only changes, caches `.deps` and ccache): configure + build + `ctest` on `debug-strict` and `debug-sanitizers` (C1, C8 done).
 
@@ -140,15 +147,20 @@ Each of these breaks a common workflow today.
 2. ~~C8, C4, C10~~ (dev-loop correctness)
 3. ~~C3, C5, C6, C14~~ (install/export story); follow-ups C32, C33
 4. ~~C9, C13, C11~~ (strict warnings actually usable)
-5. Rest, then MF items
+5. ~~C21, C23-C25, C27, C28, C31, C32~~ (2026-10-22)
+6. C35; on hold: C29, C34, MF items, T1
 
 ## Key decisions (kept from `rework.md`)
+
+- Platforms (2026-10-22): Linux is primary and the only CI target; all non-CI code must also work on Windows and macOS.
+- CMake floor stays 3.28 (2026-10-22): newer features (`CMAKE_LINKER_TYPE`, `CMAKE_MSVC_RUNTIME_CHECKS`) get minimal workarounds.
+- px is a template (2026-10-22), but a project made from it must be consumable as a subproject (C21).
 
 - `SUBDIR` required per dep; no auto-detection.
 - OPTIONS use `CACHE FORCE`: only way to override dep cache entries before `add_subdirectory`.
 - Dep sources managed by the importer (not FetchContent downloads), keyed by a URL/TAG/PATCH stamp; shared across build dirs, build trees never shared.
 - Dep build type: plain `set(CMAKE_BUILD_TYPE)` in function scope, not `CACHE FORCE` (avoids reconfigure loops).
-- `CACHE INTERNAL` for `__export_targets`: cross-subdir state sharing.
+- Export lists in per-project global properties (`__px_export_<project>`): cross-subdir state, separate for nested px projects.
 - Warning flags `PRIVATE`; never leak to consumers.
 - mimalloc: targeted `-Wno-*`, not blanket `-w`.
 - No `CMAKE_DEBUG_POSTFIX` (conflicts with per-dep build types).

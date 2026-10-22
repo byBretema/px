@@ -11,7 +11,10 @@ find_package(Git REQUIRED)
 set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/_deps")
 set(FETCHCONTENT_QUIET ON)
 
-add_library(all_dependencies INTERFACE)
+# Shared by nested px projects: the first one creates it.
+if(NOT TARGET all_dependencies)
+  add_library(all_dependencies INTERFACE)
+endif()
 
 # Fetches `ref` of `url` into `dir`, applying `patch` if given: a .patch/.diff
 # file goes through `git apply`, anything else is included as a CMake script.
@@ -61,6 +64,21 @@ function(__git dir)
     file(REMOVE_RECURSE "${dir}")
     string(JOIN " " cmd ${ARGN})
     log_fatal("import_dependency: `git ${cmd}` failed in ${dir}\n${err}")
+  endif()
+endfunction()
+
+# Cached sources are trusted by stamp; this flags tracked files changed or
+# deleted since (a stray edit, a partial rm). Warning only: editing a dep to
+# debug it is legit. Untracked files are skipped: they don't break builds,
+# and walking for them is the slow part of `git status`.
+function(__warn_if_dirty dir name)
+  execute_process(COMMAND "${GIT_EXECUTABLE}" status --porcelain --untracked-files=no
+    WORKING_DIRECTORY "${dir}"
+    OUTPUT_VARIABLE changes
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(changes)
+    string(REGEX REPLACE "([^\n]+)" "    \\1" changes "${changes}")
+    log_warning("import_dependency: ${name} sources in ${dir} differ from the fetched commit:\n${changes}")
   endif()
 endfunction()
 
@@ -128,6 +146,16 @@ macro(__add_dependency namespace target fetch_id subdir defines)
     endif()
 
     add_library(${namespace}::${target} ALIAS ${namespace}_${target})
+  else()
+    set(_real_target ${namespace}::${target})
+  endif()
+
+  # Compiled deps are not installed; setup_export warns about them.
+  if(_real_target)
+    get_target_property(_type ${_real_target} TYPE)
+    if(NOT _type STREQUAL "INTERFACE_LIBRARY")
+      set_property(GLOBAL APPEND PROPERTY __px_compiled_deps ${namespace}::${target})
+    endif()
   endif()
 
   # Macro parameter, not a variable: test its expanded text.
@@ -243,32 +271,45 @@ function(import_dependency qualified_target)
     string(APPEND stamp " patch:${patch_hash}")
   endif()
 
-  # Build dirs share DEPS_DIR; serialize check-and-fetch across configures.
-  file(MAKE_DIRECTORY "${DEPS_DIR}")
-  file(LOCK "${DEPS_DIR}/${fetch_id}.lock" GUARD FUNCTION TIMEOUT 600 RESULT_VARIABLE lock_rc)
-  if(NOT lock_rc EQUAL 0)
-    log_fatal("import_dependency: cannot lock ${fetch_id}: ${lock_rc}")
-  endif()
-
-  set(old_stamp "")
-  if(EXISTS "${stamp_file}" AND IS_DIRECTORY "${src_dir}")
-    file(READ "${stamp_file}" old_stamp)
-  endif()
-
-  if("${old_stamp}" STREQUAL "${stamp}")
-    set(status "From cache -> ")
-  else()
-    if(old_stamp)
-      set(status "Updated (${old_stamp} => ${stamp}) -> ")
-    else()
-      set(status "From fetch -> ")
+  # Already imported in this configure (nested px projects): re-fetching a
+  # different TAG would swap sources under the first importer's build.
+  get_property(seen_stamp GLOBAL PROPERTY __px_dep_${fetch_id})
+  if(seen_stamp)
+    set(status "Already imported -> ")
+    if(NOT "${seen_stamp}" STREQUAL "${stamp}")
+      log_warning("import_dependency: ${qualified_target} already imported as ${seen_stamp}, ignoring ${stamp}")
     endif()
-    __check_clean("${src_dir}" "${ns}")
-    __fetch_source("${repo_url}" "${ARG_TAG}" "${ARG_PATCH}" "${fetch_id}" "${src_dir}")
-    file(WRITE "${stamp_file}" "${stamp}")
-  endif()
+  else()
+    set_property(GLOBAL PROPERTY __px_dep_${fetch_id} "${stamp}")
 
-  file(LOCK "${DEPS_DIR}/${fetch_id}.lock" RELEASE)
+    # Build dirs share DEPS_DIR; serialize check-and-fetch across configures.
+    file(MAKE_DIRECTORY "${DEPS_DIR}")
+    file(LOCK "${DEPS_DIR}/${fetch_id}.lock" GUARD FUNCTION TIMEOUT 600 RESULT_VARIABLE lock_rc)
+    if(NOT lock_rc EQUAL 0)
+      log_fatal("import_dependency: cannot lock ${fetch_id}: ${lock_rc}")
+    endif()
+
+    set(old_stamp "")
+    if(EXISTS "${stamp_file}" AND IS_DIRECTORY "${src_dir}")
+      file(READ "${stamp_file}" old_stamp)
+    endif()
+
+    if("${old_stamp}" STREQUAL "${stamp}")
+      set(status "From cache -> ")
+      __warn_if_dirty("${src_dir}" "${qualified_target}")
+    else()
+      if(old_stamp)
+        set(status "Updated (${old_stamp} => ${stamp}) -> ")
+      else()
+        set(status "From fetch -> ")
+      endif()
+      __check_clean("${src_dir}" "${ns}")
+      __fetch_source("${repo_url}" "${ARG_TAG}" "${ARG_PATCH}" "${fetch_id}" "${src_dir}")
+      file(WRITE "${stamp_file}" "${stamp}")
+    endif()
+
+    file(LOCK "${DEPS_DIR}/${fetch_id}.lock" RELEASE)
+  endif()
 
   set(suffix "")
   if(ARG_PATCH)

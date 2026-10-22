@@ -32,7 +32,8 @@ if(__multi_config OR CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$")
   endif()
 endif()
 
-# Set modules flags: -fmodules-ts -fmodule-mapper -fdeps-format
+# No C++20 module scanning: px uses no modules, and scanning costs a
+# dependency pass per source.
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 # Includes

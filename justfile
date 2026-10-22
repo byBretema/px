@@ -103,7 +103,8 @@ run target *args: (build target)
     echo
     echo "- - - - - - - - - - - - - - - - - [   RUN   ] - - - - - - - - - - - - - - - - -"
     echo
-    bin="$(find "$(sed -n 2p "{{ _active }}")" -type f -name "{{ target }}" -perm -u+x 2>/dev/null | head -1)"
+    # Path written by CMake (make_exe/make_test).
+    bin="$(cat "$(sed -n 2p "{{ _active }}")/exe/{{ target }}" 2>/dev/null || true)"
     if [[ -z "$bin" ]]; then
         echo "no executable found for target '{{ target }}'"
         exit 1

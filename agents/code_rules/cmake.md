@@ -7,7 +7,7 @@
 
 ## Naming
 
-- Targets: `snake_case` (`core`, `test_core`, `test_malloc`)
+- Targets: `snake_case` (`core`, `test_core`, `test_patch`)
 - Test targets: `test_` prefix
 - Dep aliases: `namespace::target` (e.g., `fmt::fmt`)
 - Internal aliases: `namespace_target` (e.g., `fmt_fmt`)

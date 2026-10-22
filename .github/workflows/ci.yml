@@ -53,7 +53,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .deps
-          key: deps-${{ hashFiles('cmake/deps.cmake', 'cmake/configs/malloc.cmake', 'cmake/patches/**') }}
+          key: deps-${{ hashFiles('cmake/deps.cmake', 'cmake/patches/**') }}
           restore-keys: deps-
 
       - name: Cache ccache

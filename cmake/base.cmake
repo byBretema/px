@@ -6,7 +6,9 @@
 include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/utils/logger.cmake)
 
-set(__base_dir ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
+# Normal var, not cache: a px project used as a subproject of another px
+# project must resolve its own cmake/ dir (subdirs inherit it).
+set(__base_dir ${CMAKE_CURRENT_LIST_DIR})
 
 
 macro(pre_project)
@@ -21,7 +23,8 @@ macro(pre_project)
 
   # Set by CMakePresets.json. Lets tools (justfile) reuse the last configured
   # preset and find its build dir: line 1 = preset, line 2 = binary dir.
-  if(ACTIVE_PRESET)
+  # project() has not run yet, so PROJECT_IS_TOP_LEVEL is not usable here.
+  if(ACTIVE_PRESET AND CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     file(WRITE "${CMAKE_SOURCE_DIR}/.build/active_preset" "${ACTIVE_PRESET}\n${CMAKE_BINARY_DIR}\n")
   endif()
 
@@ -36,6 +39,10 @@ macro(post_project)
     log_warning("Missing 'pre_project()' call.")
   endif()
   unset(__pre_project_done)
+
+  # Inherited from a parent px project (px used as a subproject): it would
+  # block the ccache dir and dep writes below. Set again at the end.
+  unset(CMAKE_DISABLE_SOURCE_CHANGES)
 
   include(${__base_dir}/utils/scaffolding.cmake)
 
@@ -79,7 +86,6 @@ macro(post_project)
   log_header("Dependencies")
 
   include(${__base_dir}/deps.cmake)
-  include(${__base_dir}/configs/malloc.cmake)
 
   # Project setup: own targets only
   # log_header("Setup")

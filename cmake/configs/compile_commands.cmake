@@ -10,7 +10,7 @@ endif()
 # copied to the source root by a build step instead of at configure time.
 # The stamp is the tracked output: CMAKE_DISABLE_SOURCE_CHANGES forbids
 # custom command outputs in the source tree.
-if(CMAKE_EXPORT_COMPILE_COMMANDS AND CMAKE_GENERATOR MATCHES "Ninja|Makefiles")
+if(CMAKE_EXPORT_COMPILE_COMMANDS AND CMAKE_GENERATOR MATCHES "Ninja|Makefiles" AND PROJECT_IS_TOP_LEVEL)
   set(__cc_src "${CMAKE_BINARY_DIR}/compile_commands.json")
   set(__cc_stamp "${CMAKE_BINARY_DIR}/compile_commands.stamp")
   add_custom_command(OUTPUT "${__cc_stamp}"
