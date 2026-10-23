@@ -1,6 +1,15 @@
-#include <cassert>
+#include <cstdlib>
 
 #include "logger.hpp"
+
+// Not assert(): NDEBUG compiles it out, so Release tests would check nothing.
+#define CHECK(expr)                                                            \
+    do {                                                                       \
+        if (!(expr)) {                                                         \
+            y::err("{}:{}: CHECK failed: {}", __FILE__, __LINE__, #expr);      \
+            std::exit(1);                                                      \
+        }                                                                      \
+    } while (false)
 
 int main() {
     y::println("=================== RUNNING TinyFmt TESTS ===================\n");
@@ -13,12 +22,12 @@ int main() {
     // Test char vs integer
     char ch = 'Z';
     std::string const res_char = y::format("Char: {}", ch);
-    assert(res_char == "Char: Z");
+    CHECK(res_char == "Char: Z");
     y::println("  \u2713 Single char: {}", res_char);
 
     // Test booleans
     std::string const res_bool = y::format("Bools: {} / {}", true, false);
-    assert(res_bool == "Bools: true / false");
+    CHECK(res_bool == "Bools: true / false");
     y::println("  \u2713 Booleans: {}", res_bool);
 
     // Test numbers (int, float, negative)
@@ -32,25 +41,25 @@ int main() {
 
     // const char*
     const char* c_str = "hello c-string";
-    assert(y::format("{}", c_str) == "hello c-string");
+    CHECK(y::format("{}", c_str) == "hello c-string");
 
     // nullptr const char*
     const char* null_c_str = nullptr;
-    assert(y::format("{}", null_c_str) == "(null)");
+    CHECK(y::format("{}", null_c_str) == "(null)");
 
     // Mutable char array (char*) - must NOT print as hexadecimal address
     char mut_str[] = "mutable string";
     std::string const res_mut = y::format("{}", mut_str);
-    assert(res_mut == "mutable string");
+    CHECK(res_mut == "mutable string");
     y::println("  \u2713 Mutable char*: {}", res_mut);
 
     // std::string
     std::string const cpp_str = "std::string object";
-    assert(y::format("{}", cpp_str) == "std::string object");
+    CHECK(y::format("{}", cpp_str) == "std::string object");
 
     // std::string_view
     std::string_view sv = "std::string_view object";
-    assert(y::format("{}", sv) == "std::string_view object");
+    CHECK(y::format("{}", sv) == "std::string_view object");
     y::println("  \u2713 std::string and std::string_view passing passed.");
 
     // ------------------------------------------------------------------------
@@ -63,8 +72,8 @@ int main() {
     void* null_ptr = nullptr;
 
     std::string const res_ptr = y::format("Ptr: {}, Null: {}", static_cast<void*>(ptr), null_ptr);
-    assert(res_ptr.find("0x") != std::string::npos);
-    assert(res_ptr.find("nullptr") != std::string::npos);
+    CHECK(res_ptr.find("0x") != std::string::npos);
+    CHECK(res_ptr.find("nullptr") != std::string::npos);
     y::println("  \u2713 Pointer outputs: {}", res_ptr);
 
     // ------------------------------------------------------------------------
@@ -76,7 +85,7 @@ int main() {
     std::string const large_input = "This payload is significantly larger than 16 bytes!";
     y::detail::fmt::to_buffer(tiny_buf, "{}", large_input);
 
-    assert(tiny_buf.view() == large_input);
+    CHECK(tiny_buf.view() == large_input);
     y::println("  \u2713 Tiny buffer spill to heap migration passed.");
 
     // ------------------------------------------------------------------------
@@ -95,7 +104,7 @@ int main() {
     // Test with_* early exit helpers
     y::println("\n[6] Testing Early Exit Helpers:");
     auto val = with_warn("Validating config...", 42);
-    assert(val == 42);
+    CHECK(val == 42);
 
     y::println("\n================ ALL TESTS PASSED SUCCESSFULLY ================");
     return 0;

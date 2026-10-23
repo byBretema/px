@@ -108,9 +108,9 @@ Each of these breaks a common workflow today.
   - `make_exe`/`make_test` write the executable's path to `<build>/exe/<name>` (`file(GENERATE)`, `$<TARGET_FILE>`; `-<config>` suffix on multi-config); `just run` reads it instead of `find -perm`.
 - [x] **C28 Docs drift in comments** (Fixed 2026-10-22)
   - Fixed `/Zc:preprocessor` / `/permissive-` and module-scanning comments. Removed never-enabled `-Wno-float-equal`, `-Wno-c++98-compat*`, redundant `-Wunused`, and `-Wno-language-extension-token` / GCC `-Wno-strict-aliasing` (own code builds clean without them: Clang `debug-sanitizers-strict`, GCC `release-strict`).
-- [ ] **C35 Tests are no-ops in Release** (Verified 2026-10-22)
+- [x] **C35 Tests are no-ops in Release** (Fixed 2026-10-23: `test_core` uses its own always-on `CHECK()`)
   - Tests check with `assert()`, which `NDEBUG` removes: Release/RelWithDebInfo tests always pass, and `release-strict` fails to build `test_core` (`unused variable 'c_str'`, variables only used in asserts).
-  - Option: `make_test` adds `-UNDEBUG` (`/UNDEBUG` on MSVC), or tests use their own check macro.
+  - Option: tests use their own check macro. Rejected 2026-10-23: `make_test` adding `-UNDEBUG` (changes default Release behaviour).
 - [ ] **C29 Every target links every dep** (On hold) — `all_dependencies`
   - All compiled deps (fmt, cpr, EASTL, glm) link into every exe/test. Consider per-target `DEPS` args on `make_*`.
   - When doing this: `import_dependency` DEFINES currently land on `all_dependencies` (px-owned, so dep targets are never modified). Per-target linking must move them onto a px-owned handle per dep (e.g. `__dep_<ns>_<target>` linking the real target and holding SYSTEM includes + DEFINES), since `ns::target` is taken when the dep provides its own alias. Targets would then link those handles instead of `ns::target`.
@@ -148,7 +148,7 @@ T1 on hold (2026-10-22).
 3. ~~C3, C5, C6, C14~~ (install/export story); follow-ups C32, C33
 4. ~~C9, C13, C11~~ (strict warnings actually usable)
 5. ~~C21, C23-C25, C27, C28, C31, C32~~ (2026-10-22)
-6. C35; on hold: C29, C34, MF items, T1
+6. ~~C35~~ (2026-10-23); on hold: C29, C34, MF items, T1
 
 ## Key decisions (kept from `rework.md`)
 

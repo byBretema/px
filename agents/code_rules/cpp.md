@@ -28,7 +28,7 @@
 ## Error handling
 
 - No exceptions
-- `assert()` for test invariants
+- Tests: an always-on `CHECK()` macro for invariants, not `assert()` (compiled out by `NDEBUG` in Release)
 
 ## Namespaces
 

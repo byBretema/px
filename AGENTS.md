@@ -9,6 +9,7 @@
 - `cmake/deps.cmake`: every external dependency, one `import_dependency()` call each.
 - `cmake/utils/importer.cmake`: `import_dependency()` (FetchContent wrapper) and the `all_dependencies` target.
 - `cmake/utils/scaffolding.cmake`: `make_exe`, `make_lib`, `make_hlib`, `make_test`, `setup_testing`, `setup_export`.
+- `cmake/utils/new_target.cmake`: script mode (`cmake -P`), creates a new `projects/<name>/`.
 - `cmake/configs/*.cmake`: one concern per file (options, warnings, sanitizers, ccache, mold, LTO/defaults).
 - `projects/<name>/`: one target per dir; every source in the dir tree (subdirs included) is compiled. Code that must not be compiled lives outside `projects/`; nested `CMakeLists.txt` is an error.
 - `tests/<name>/`: test executables (`make_test`), registered with CTest.
@@ -24,10 +25,10 @@ All via `just` (bash). Build dirs `.build/<group>/`, deps sources `.deps/`, ccac
 - Presets: `{debug,profile,release}[-asan|-ubsan|-sanitizers][-strict]` (`cmake --list-presets`).
 - `just test [tests...]`: build + run CTest.
 - `just run <target> [args]`: build + run an executable.
-- `just add_exe <name>` / `just add_lib <name> [SHARED|STATIC]`: scaffold under `projects/`.
+- `just add_exe <name>` / `just add_lib <name> [SHARED|STATIC]`: scaffold under `projects/` and register it in `projects/CMakeLists.txt` (`cmake/utils/new_target.cmake`). Names must be C identifiers (lib names become namespaces).
 - `just clean [build|deps|all]`.
 
-Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest --preset debug` (every configure preset has matching build/test presets; test presets fail when no tests are found).
+Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest --preset debug` (every configure preset has matching build/test presets; test presets fail when no tests are found). Scaffold: `cmake -D NAME=<name> -D TYPE=<EXE|SHARED|STATIC> -P cmake/utils/new_target.cmake`.
 
 ## Common changes
 

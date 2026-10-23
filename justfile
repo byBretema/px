@@ -146,21 +146,8 @@ _clean_all:
 # --- Scaffolding ---
 
 add_exe name:
-    @if ! echo "{{ name }}" | grep -qE '^[A-Za-z0-9_.-]+$'; then echo "invalid name: {{ name }}"; exit 1; fi
-    @if [ -e "{{ _root }}/projects/{{ name }}" ]; then echo "already exists: {{ name }}"; exit 1; fi
-    @mkdir -p "{{ _root }}/projects/{{ name }}"
-    @printf 'make_exe({{ name }})\n' > "{{ _root }}/projects/{{ name }}/CMakeLists.txt"
-    @printf 'int main() {\n    return 0;\n}\n' > "{{ _root }}/projects/{{ name }}/main.cpp"
-    @if ! grep -qF "add_subdirectory({{ name }})" "{{ _root }}/projects/CMakeLists.txt"; then printf 'add_subdirectory({{ name }})\n' >> "{{ _root }}/projects/CMakeLists.txt"; fi
-    @echo "created exe: {{ name }}"
+    @cmake -D "NAME={{ name }}" -D TYPE=EXE -P "{{ _root }}/cmake/utils/new_target.cmake"
 
 # SHARED / STATIC
 add_lib name type="SHARED":
-    @if ! echo "{{ name }}" | grep -qE '^[A-Za-z0-9_.-]+$'; then echo "invalid name: {{ name }}"; exit 1; fi
-    @if [ -e "{{ _root }}/projects/{{ name }}" ]; then echo "already exists: {{ name }}"; exit 1; fi
-    @mkdir -p "{{ _root }}/projects/{{ name }}"
-    @printf 'make_lib({{ name }} {{ type }})\n' > "{{ _root }}/projects/{{ name }}/CMakeLists.txt"
-    @printf '#pragma once\n\nnamespace {{ name }} {\n}\n' > "{{ _root }}/projects/{{ name }}/{{ name }}.hpp"
-    @printf '#include "{{ name }}.hpp"\n' > "{{ _root }}/projects/{{ name }}/{{ name }}.cpp"
-    @if ! grep -qF "add_subdirectory({{ name }})" "{{ _root }}/projects/CMakeLists.txt"; then printf 'add_subdirectory({{ name }})\n' >> "{{ _root }}/projects/CMakeLists.txt"; fi
-    @echo "created lib: {{ name }} ({{ type }})"
+    @cmake -D "NAME={{ name }}" -D "TYPE={{ type }}" -P "{{ _root }}/cmake/utils/new_target.cmake"
