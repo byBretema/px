@@ -8,6 +8,7 @@
 ## Naming
 
 - Targets: `snake_case` (`core`, `test_core`, `test_patch`)
+- Lib real targets: `<PROJECT_NAME>_<name>` (`px_core`), `EXPORT_NAME <name>`; link via the `<PROJECT_NAME>::<name>` alias. Exes: plain at top level, prefixed when nested. Tests: plain (top level only)
 - Test targets: `test_` prefix
 - Dep aliases: `namespace::target` (e.g., `fmt::fmt`)
 - Internal aliases: `namespace_target` (e.g., `fmt_fmt`)

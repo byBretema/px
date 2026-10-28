@@ -59,38 +59,49 @@ endfunction()
 
 function(make_exe name)
 
-  __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
-  add_executable(${name} ${_sources} ${_headers} ${ARGN})
-
-  if(TARGET all_dependencies)
-    target_link_libraries(${name} PRIVATE all_dependencies)
+  # Plain name at top level (`just build/run <name>`, binary name). Nested px
+  # projects get the project prefix: target names and bin/ files are global.
+  set(target ${name})
+  if(NOT PROJECT_IS_TOP_LEVEL)
+    set(target ${PROJECT_NAME}_${name})
   endif()
 
-  target_include_directories(${name} PRIVATE
+  __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
+  add_executable(${target} ${_sources} ${_headers} ${ARGN})
+
+  if(TARGET all_dependencies)
+    target_link_libraries(${target} PRIVATE all_dependencies)
+  endif()
+
+  target_include_directories(${target} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/vendor>)
 
-  setup_warnings(${name})
-  setup_sanitizers(${name})
+  setup_warnings(${target})
+  setup_sanitizers(${target})
 
-  __write_exe_path(${name})
-  __register_export(${name})
+  __write_exe_path(${target})
+  __register_export(${target})
 
 endfunction()
 
 
 function(make_lib name type)
 
+  # Real name prefixed, as target names are global (nested px projects,
+  # deps); link through the alias, which is also the installed name.
+  set(target ${PROJECT_NAME}_${name})
+
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
-  add_library(${name} ${type} ${_sources} ${ARGN})
-  # Same name in-tree (add_subdirectory) as installed (find_package).
-  add_library(${PROJECT_NAME}::${name} ALIAS ${name})
-  __add_header_set(${name} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+  add_library(${target} ${type} ${_sources} ${ARGN})
+  add_library(${PROJECT_NAME}::${name} ALIAS ${target})
+  set_target_properties(${target} PROPERTIES EXPORT_NAME ${name})
+  __add_header_set(${target} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
   # Build-tree only: fetched deps are not installed, so the export must not
   # reference them (consumers of the installed package provide their own).
   if(TARGET all_dependencies)
-    target_link_libraries(${name} PUBLIC $<BUILD_INTERFACE:all_dependencies>)
+    target_link_libraries(${target} PUBLIC $<BUILD_INTERFACE:all_dependencies>)
   endif()
 
   # Keep symbols of static libs linked into a shared lib (e.g. fmt) private,
@@ -99,27 +110,31 @@ function(make_lib name type)
   # Apple: not covered; ld64 has no --exclude-libs, so dylibs still export
   # them (per-archive -hidden-l<name> / -load_hidden would be needed).
   if(type STREQUAL "SHARED" AND NOT APPLE AND NOT MSVC)
-    target_link_options(${name} PRIVATE "LINKER:--exclude-libs,ALL")
+    target_link_options(${target} PRIVATE "LINKER:--exclude-libs,ALL")
   endif()
 
-  target_include_directories(${name} PRIVATE
+  target_include_directories(${target} PRIVATE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/vendor>)
 
-  setup_warnings(${name})
-  setup_sanitizers(${name})
+  setup_warnings(${target})
+  setup_sanitizers(${target})
 
-  __register_export(${name})
+  __register_export(${target})
 
 endfunction()
 
 
 function(make_lib_header_only name)
 
-  add_library(${name} INTERFACE)
-  add_library(${PROJECT_NAME}::${name} ALIAS ${name})
-  __add_header_set(${name} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+  # Prefixed like make_lib.
+  set(target ${PROJECT_NAME}_${name})
 
-  __register_export(${name})
+  add_library(${target} INTERFACE)
+  add_library(${PROJECT_NAME}::${name} ALIAS ${target})
+  set_target_properties(${target} PROPERTIES EXPORT_NAME ${name})
+  __add_header_set(${target} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+
+  __register_export(${target})
 
 endfunction()
 
@@ -194,13 +209,20 @@ function(setup_export)
   include(CMakePackageConfigHelpers)
 
   # One install() per target: each library's headers go to their own
-  # include/<ns>/<target>/ (mirrors the in-tree include root, no collisions).
+  # include/<ns>/<name>/ (mirrors the in-tree include root, no collisions).
+  set(names "")
   foreach(target IN LISTS __export_targets)
+    # Exes have no EXPORT_NAME: their target name is the export name.
+    get_target_property(export_name ${target} EXPORT_NAME)
+    if(NOT export_name)
+      set(export_name ${target})
+    endif()
+    list(APPEND names ${export_name})
     set(header_set "")
     get_target_property(sets ${target} INTERFACE_HEADER_SETS)
     if(sets)
       set(header_set FILE_SET HEADERS
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${__export_namespace}/${target})
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${__export_namespace}/${export_name})
     endif()
     install(TARGETS ${target}
       EXPORT ${export_set}
@@ -245,7 +267,7 @@ function(setup_export)
       DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${__export_namespace}")
   endif()
 
-  string(JOIN ", " targets ${__export_targets})
-  log_status("Export generated (${__export_namespace} :: ${targets})")
+  string(JOIN ", " names ${names})
+  log_status("Export generated (${__export_namespace} :: ${names})")
 
 endfunction()

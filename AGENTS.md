@@ -33,7 +33,7 @@ Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest -
 ## Common changes
 
 - New dependency: add an `import_dependency(ns::target GITHUB org/repo TAG <tag> SUBDIR <include-dir> [OPTIONS K=V...] [DEFINES MACRO...])` block to `cmake/deps.cmake`. It is linked into every target through `all_dependencies`.
-- New target: create `projects/<name>/CMakeLists.txt` with one `make_*` call, then `add_subdirectory(<name>)` in `projects/CMakeLists.txt`.
+- New target: create `projects/<name>/CMakeLists.txt` with one `make_*` call, then `add_subdirectory(<name>)` in `projects/CMakeLists.txt`. Libs are real targets `<PROJECT_NAME>_<name>`: link them as `<PROJECT_NAME>::<name>` (e.g. `px::core`), never by plain name.
 - New option: `cmake/configs/options.cmake`, following the `USE_*` / `ENABLE_*` / `FORCE_*` prefixes.
 
 ## Verify
@@ -51,7 +51,7 @@ Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest -
 - ccache, mold, PIC, output dirs apply to deps too; visibility, warnings, LTO, C++ standard apply to own targets only.
 - Changing a dep's URL, `TAG` or `PATCH` file re-fetches that dep on next configure; no `just clean deps` needed. A re-fetch refuses to wipe local edits in `.deps/<id>-src`; the error prints the commands to capture them as `cmake/patches/<ns>.patch` (see `cmake/patches/README.md`).
 - `just run` reads the executable path CMake writes to `<build>/exe/<name>` (`make_exe`/`make_test`).
-- Usable as a subproject (`add_subdirectory`/FetchContent): libs are also `<PROJECT_NAME>::<target>` in-tree; tests, install rules, `compile_commands` and `active_preset` are top-level only. Nested px projects share deps (first import wins) and `all_dependencies`, need distinct target names, and the last-loaded px copy's CMake functions win.
+- Usable as a subproject (`add_subdirectory`/FetchContent): libs are also `<PROJECT_NAME>::<target>` in-tree; tests, install rules, `compile_commands` and `active_preset` are top-level only. Lib target names carry the project prefix and nested projects' exes do too, so same-named targets in different projects don't clash. Nested px projects share deps (first import wins) and `all_dependencies`, and the last-loaded px copy's CMake functions win.
 - Platforms: Linux primary (CI); non-CI code must work on Windows and macOS. CMake floor 3.28.
 - Installed package: px headers/libs only (no deps), headers at `include/<ns>/<target>/`. Installed STATIC libs that use compiled deps can't be linked by consumers (deps are not installed).
 

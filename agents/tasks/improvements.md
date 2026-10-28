@@ -111,6 +111,11 @@ Each of these breaks a common workflow today.
 - [x] **C35 Tests are no-ops in Release** (Fixed 2026-10-23: `test_core` uses its own always-on `CHECK()`)
   - Tests check with `assert()`, which `NDEBUG` removes: Release/RelWithDebInfo tests always pass, and `release-strict` fails to build `test_core` (`unused variable 'c_str'`, variables only used in asserts).
   - Option: tests use their own check macro. Rejected 2026-10-23: `make_test` adding `-UNDEBUG` (changes default Release behaviour).
+- [x] **C36 Target names collide across projects** (Fixed 2026-10-28)
+  - Target names are global: two px projects (nested via C21) both with `projects/core`, a plain parent with its own `core`, or a lib named like a dep's target (`fmt`) failed at `add_library`.
+  - `make_lib`/`make_hlib` create `<PROJECT_NAME>_<name>` with `EXPORT_NAME <name>` and the `<PROJECT_NAME>::<name>` alias, so in-tree and installed names stay `px::core`; installed headers stay at `include/<ns>/<name>/`. Library files are prefixed too (`libpx_core.so`), so shared `lib/` dirs can't clash either.
+  - `make_exe` prefixes only when nested: top-level target and binary names (`just build/run <name>`) are unchanged. Tests are top-level only and stay plain.
+  - Plain-name links (`core`) no longer resolve: use the alias. Verified: parent and nested child each with `core` and exe `foo`; installed `px::core` consumed through `find_package`.
 - [ ] **C29 Every target links every dep** (On hold) — `all_dependencies`
   - All compiled deps (fmt, cpr, EASTL, glm) link into every exe/test. Consider per-target `DEPS` args on `make_*`.
   - When doing this: `import_dependency` DEFINES currently land on `all_dependencies` (px-owned, so dep targets are never modified). Per-target linking must move them onto a px-owned handle per dep (e.g. `__dep_<ns>_<target>` linking the real target and holding SYSTEM includes + DEFINES), since `ns::target` is taken when the dep provides its own alias. Targets would then link those handles instead of `ns::target`.
