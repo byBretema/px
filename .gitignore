@@ -8,6 +8,12 @@ build/
 compile_commands.json
 
 
+# --- Claude Code --------------------------------------------------------------
+
+# Personal settings; shared rules live in .claude/CLAUDE.md and .claude/rules/
+.claude/settings.local.json
+
+
 # --- C / C++ Compiled Artifacts & Tooling -------------------------------------
 
 # Objects & Libraries

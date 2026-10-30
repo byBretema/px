@@ -1,19 +1,19 @@
 name: CI
 
-# Verification CI: runs for code/build changes only. Docs, agent files and
+# Verification CI: runs for code/build changes only. Docs, Claude files and
 # repo metadata are ignored.
 on:
   push:
     branches: [main]
     paths-ignore:
       - "**.md"
-      - "agents/**"
+      - ".claude/**"
       - "LICENSE"
       - ".gitignore"
   pull_request:
     paths-ignore:
       - "**.md"
-      - "agents/**"
+      - ".claude/**"
       - "LICENSE"
       - ".gitignore"
   workflow_dispatch:
