@@ -143,6 +143,12 @@ _clean_all:
     @just _clean_build
     @just _clean_deps
 
+# --- Format ---
+
+# clang-format over projects/ and tests/
+format:
+    @cmake -P "{{ _root }}/cmake/utils/format.cmake"
+
 # --- Scaffolding ---
 
 add_exe name:

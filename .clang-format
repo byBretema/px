@@ -1,0 +1,308 @@
+
+---
+
+# clang-format --version  =>  21.1.x
+# https://releases.llvm.org/21.1.0/tools/clang/docs/ClangFormatStyleOptions.html
+
+
+################################################################################
+### Lang
+################################################################################
+
+Language: Cpp
+Standard: Auto
+
+
+################################################################################
+### Limits
+################################################################################
+
+ColumnLimit: 120
+MaxEmptyLinesToKeep: 2
+
+KeepEmptyLines:
+  AtEndOfFile: true
+  AtStartOfBlock: false
+  AtStartOfFile: false
+
+ReflowComments: false
+
+
+################################################################################
+### Indentation
+################################################################################
+
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+AccessModifierOffset: -4
+ContinuationIndentWidth: 4
+ConstructorInitializerIndentWidth: 4
+
+IndentPPDirectives: AfterHash
+IndentWrappedFunctionNames: true
+
+
+################################################################################
+### Namespaces
+################################################################################
+
+FixNamespaceComments: true
+NamespaceIndentation: Inner
+
+
+################################################################################
+### Breaks
+################################################################################
+
+BreakBeforeBraces: Attach  # Allman
+BreakBeforeTemplateCloser: true
+BreakBeforeTernaryOperators: true
+BreakBeforeConceptDeclarations: Always
+
+BreakAfterAttributes: Never
+
+BreakBeforeBinaryOperators: None
+BreakBinaryOperations: RespectPrecedence
+
+AlwaysBreakTemplateDeclarations: true
+
+# AllowBreakBeforeQtProperty: false        (on version 23.x)
+# BreakBeforeCloseBracketBracedList: true  (on version 23.x)
+# BreakBeforeCloseBracketFunction: true    (on version 23.x)
+# BreakBeforeCloseBracketIf: true          (on version 23.x)
+# BreakBeforeCloseBracketLoop: true        (on version 23.x)
+# BreakBeforeCloseBracketSwitch: true      (on version 23.x)
+
+
+################################################################################
+### Includes
+################################################################################
+
+SortIncludes: Never
+IncludeBlocks: Preserve
+
+
+################################################################################
+### Shorts single line
+################################################################################
+
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortNamespacesOnASingleLine: false
+AlwaysBreakBeforeMultilineStrings: false
+
+
+################################################################################
+### Lambdas
+################################################################################
+
+AllowShortLambdasOnASingleLine: Inline
+LambdaBodyIndentation: OuterScope
+
+
+################################################################################
+### Arguments alignment
+################################################################################
+
+#! Params  (on funciton signature)
+
+BinPackParameters: OnePerLine
+BreakFunctionDefinitionParameters: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+#! Args  (on funciton call)
+
+BinPackArguments: false
+AllowAllArgumentsOnNextLine: false
+
+#! Try to always break on function call first param, not on '='
+
+PenaltyBreakAssignment: 999
+PenaltyBreakOpenParenthesis: 0
+PenaltyBreakBeforeFirstCallParameter: 0
+
+
+################################################################################
+### Spaces
+################################################################################
+
+#! Before
+
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+
+#! In
+
+SpaceInEmptyParentheses: false
+SpacesInSquareBrackets: false
+# SpaceInEmptyBraces: Never   (on version 23.x)
+SpacesInAngles: Never
+SpacesInContainerLiterals: false
+SpaceInEmptyBlock: false   # replaced by SpaceInEmptyBraces on version 23.x
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: -1
+
+#! After
+
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceAfterOperatorKeyword: false
+
+
+################################################################################
+# Space parens
+################################################################################
+
+#! Before
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: true
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: false
+  AfterNot: false
+  AfterOverloadedOperator: false
+  AfterPlacementOperator: true
+  AfterRequiresInClause: true
+  AfterRequiresInExpression: true
+  BeforeNonEmptyParentheses: false
+
+#! In
+
+SpacesInParens: Custom
+SpacesInParensOptions:
+  ExceptDoubleParentheses: false
+  InConditionalStatements: false
+  InCStyleCasts: false
+  InEmptyParentheses: false
+  Other: false
+
+
+################################################################################
+### Modern Initializer
+###   Cpp11BracedListStyle: true -> {1,2,3}  false -> { 1,2,3 }
+################################################################################
+
+Cpp11BracedListStyle: true
+SpaceBeforeCpp11BracedList: true
+
+
+################################################################################
+### Comments
+###   '^#+$' : Avoid adding a space on '//#######' comments
+################################################################################
+
+# CommentPragmas: '^#+$'
+
+
+################################################################################
+### Alignment
+################################################################################
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+AlignAfterOpenBracket: true
+
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+
+# AlignArrayOfStructures: Right  (Needs review)
+AlignEscapedNewlines: Left
+AlignConsecutiveMacros: None
+AlignOperands: AlignAfterOperator
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+
+################################################################################
+### Switch
+################################################################################
+
+IndentCaseBlocks: true
+IndentCaseLabels: true
+AllowShortCaseExpressionOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: true
+
+
+################################################################################
+### Ctors
+################################################################################
+
+BreakInheritanceList: BeforeComma
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: CurrentLine  # Never
+
+
+################################################################################
+### Requires
+################################################################################
+
+IndentRequiresClause: false
+RequiresClausePosition: WithPreceding
+
+
+################################################################################
+### Misc
+################################################################################
+
+RemoveEmptyLinesInUnwrappedLines: true
+BitFieldColonSpacing: Both
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: LogicalBlock
+
+InsertTrailingCommas: Wrapped
+
+IntegerLiteralSeparator:
+  Binary: -1
+  Decimal: 3
+  Hex: -1
+
+SeparateDefinitionBlocks: Always
+
+BinPackLongBracedList: true
+
+# NumericLiteralCase:  (on version 23.x)
+#   ExponentLetter: Lower
+#   HexDigit: Upper
+#   Prefix: Lower
+#   Suffix: Lower
+
+
+################################################################################
+### DANGER AREA (!!)
+###
+### https://releases.llvm.org/21.1.0/tools/clang/docs/ClangFormatStyleOptions.html#qualifieralignment
+###
+###   Below settings: "Could lead to incorrect code formatting due to
+###   incorrect decisions made due to clang-formats lack of complete semantic
+###   information. As such extra care should be taken to review code changes
+###   made by the use of this option."
+###
+################################################################################
+
+QualifierAlignment: Custom
+QualifierOrder: [static, inline, constexpr, const, friend, volatile, restrict, type]
+RemoveBracesLLVM: true      # Automatic remove braces on one-line ifs or loops
+RemoveSemicolon: true       # Automatic remove trailing semi-colon
+EnumTrailingComma: Remove   # Automatic remove trailing ',' on enums  (on version 21.x)
+
+...

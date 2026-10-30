@@ -10,6 +10,6 @@ paths:
 - Namespaces: `y` public API, `y::detail` internals.
 - `std::string_view` for read-only params, `std::string` for owned data; `[[nodiscard]]` / `[[maybe_unused]]` as needed.
 - `static_cast` only (old-style casts warn).
-- 4-space indent, attached braces.
+- Formatting: `.clang-format` is the authority; apply with `just format` (clang-format 21+).
 - Must build clean under `debug-strict` (warnings as errors); flags in `cmake/configs/warnings.cmake`.
 - Tests: always-on `CHECK()` macro, not `assert()` (compiled out by `NDEBUG` in Release).
