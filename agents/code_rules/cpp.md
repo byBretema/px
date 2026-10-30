@@ -2,7 +2,7 @@
 
 ## Standard
 
-- C++23 (`CMAKE_CXX_STANDARD 23`, extensions off, required); glaze requires it
+- C++23 minimum (`cxx_std_23` compile feature on own targets, extensions off); glaze requires it
 - Use `std::expected` (no polyfill)
 
 ## Header guards

@@ -68,6 +68,7 @@ function(make_exe name)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${target} ${_sources} ${_headers} ${ARGN})
+  target_compile_features(${target} PRIVATE ${__cxx_std})
 
   if(TARGET all_dependencies)
     target_link_libraries(${target} PRIVATE all_dependencies)
@@ -96,6 +97,7 @@ function(make_lib name type)
   add_library(${target} ${type} ${_sources} ${ARGN})
   add_library(${PROJECT_NAME}::${name} ALIAS ${target})
   set_target_properties(${target} PROPERTIES EXPORT_NAME ${name})
+  target_compile_features(${target} PUBLIC ${__cxx_std})
   __add_header_set(${target} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
   # Build-tree only: fetched deps are not installed, so the export must not
@@ -132,6 +134,7 @@ function(make_lib_header_only name)
   add_library(${target} INTERFACE)
   add_library(${PROJECT_NAME}::${name} ALIAS ${target})
   set_target_properties(${target} PROPERTIES EXPORT_NAME ${name})
+  target_compile_features(${target} INTERFACE ${__cxx_std})
   __add_header_set(${target} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
   __register_export(${target})
@@ -148,6 +151,7 @@ function(make_test name)
 
   __glob_sources("${CMAKE_CURRENT_SOURCE_DIR}" _sources _headers)
   add_executable(${name} ${_sources} ${_headers} ${ARGN})
+  target_compile_features(${name} PRIVATE ${__cxx_std})
 
   if(TARGET all_dependencies)
     target_link_libraries(${name} PRIVATE all_dependencies)

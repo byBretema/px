@@ -50,6 +50,7 @@
 ## Dependencies
 
 - All deps through `import_dependency()` (FetchContent wrapper)
+- Installed libs only (Qt, Boost, Vulkan...): plain `find_package()` in `cmake/deps.cmake`, linked into `all_dependencies`; no system fallback for fetched deps
 - Sources: importer does a shallow `git fetch <TAG>` into `DEPS_DIR/<id>-src`; `<id>.stamp` (`URL@TAG` + PATCH hash) triggers re-fetch on any change
 - Patches: `cmake/patches/<dep>.patch` (git diff, preferred) or `<dep>.cmake` (script); format and workflow in `cmake/patches/README.md`
 - `FetchContent_Declare(SOURCE_DIR ... SYSTEM)` + `FetchContent_MakeAvailable` for `add_subdirectory` only
@@ -61,6 +62,7 @@
 
 | Setting | Value |
 |---|---|
+| C++ standard | `cxx_std_23` compile feature (`PUBLIC` on libs, so installed consumers inherit it); `CMAKE_CXX_STANDARD` can only raise it |
 | Symbol visibility | `hidden` |
 | PIC | `ON` |
 | LTO | `ON` for Release/RelWithDebInfo, if `check_ipo_supported()` |

@@ -32,7 +32,7 @@ Without `just`: `cmake --preset debug && cmake --build --preset debug && ctest -
 
 ## Common changes
 
-- New dependency: add an `import_dependency(ns::target GITHUB org/repo TAG <tag> SUBDIR <include-dir> [OPTIONS K=V...] [DEFINES MACRO...])` block to `cmake/deps.cmake`. It is linked into every target through `all_dependencies`.
+- New dependency: add an `import_dependency(ns::target GITHUB org/repo TAG <tag> SUBDIR <include-dir> [OPTIONS K=V...] [DEFINES MACRO...])` block to `cmake/deps.cmake`. It is linked into every target through `all_dependencies`. A lib used from the system instead (Qt, Boost, Vulkan...): `find_package(Qt6 REQUIRED COMPONENTS Core)` + `target_link_libraries(all_dependencies INTERFACE Qt6::Core)` in `cmake/deps.cmake`; it gets no px patches, build options or sanitizers.
 - New target: create `projects/<name>/CMakeLists.txt` with one `make_*` call, then `add_subdirectory(<name>)` in `projects/CMakeLists.txt`. Libs are real targets `<PROJECT_NAME>_<name>`: link them as `<PROJECT_NAME>::<name>` (e.g. `px::core`), never by plain name.
 - New option: `cmake/configs/options.cmake`, following the `USE_*` / `ENABLE_*` / `FORCE_*` prefixes.
 

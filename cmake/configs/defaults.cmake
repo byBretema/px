@@ -2,10 +2,9 @@
 # Setup some sane defaults
 #-------------------------------------------------------------------------------
 
-# C++ standard
-if(NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 23)
-endif()
+# C++ standard: a compile feature on every own target (make_*), so installed
+# libs carry it to consumers. CMAKE_CXX_STANDARD can raise it, not lower it.
+set(__cxx_std cxx_std_23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

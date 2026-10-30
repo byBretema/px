@@ -132,9 +132,9 @@ All open MF items on hold (2026-10-22). MF3 (CPack) is wanted next.
 - [ ] **MF6** Multi-config generator handling (compile_commands, ctest `-C`; build-type checks done in C16)
 - [ ] **MF7** `try_compile` / C++23 feature validation
 - [x] **MF8** CI presets: `buildPresets`, `testPresets` for every configure preset (2026-10-18); test presets use `noTestsAction: error`
-- [ ] **MF9** `find_package` fallback for system deps (ref: `CPMFindPackage`, FetchContent `FIND_PACKAGE_ARGS`)
-- [ ] **MF10** `target_compile_features(cxx_std_23)` instead of global `CMAKE_CXX_STANDARD`
-- [ ] **MF11** Opt-in local packages (ref: `CPM_USE_LOCAL_PACKAGES`); overlaps MF9
+- [x] **MF9** `find_package` fallback for system deps (Dropped 2026-10-30: an installed package bypasses PATCH, OPTIONS, build type, sanitizers and PIC, and makes the resolved version machine-dependent; the audience (distro packagers, sandboxed package builds) is not px's. Offline is covered by `.deps`/`DEPS_DIR`; system-only libs use plain `find_package` in `deps.cmake`, see AGENTS.md)
+- [x] **MF10** `target_compile_features(cxx_std_23)` instead of global `CMAKE_CXX_STANDARD` (2026-10-30: `make_*` add it, `PUBLIC`/`INTERFACE` on libs, so the installed export carries `INTERFACE_COMPILE_FEATURES cxx_std_23`; `CMAKE_CXX_STANDARD` can only raise it)
+- [x] **MF11** Opt-in local packages (Dropped 2026-10-30, with MF9)
 - [ ] **MF12** Dep lock file (resolved SHA per dep); per-dep stamps from C4 are the base
 - [ ] **MF13** `CMAKE_INSTALL_PREFIX` default/validation, install presets
 - [ ] **MF14** Clear diagnostics for dep fetch/version failures
@@ -153,7 +153,7 @@ T1 on hold (2026-10-22).
 3. ~~C3, C5, C6, C14~~ (install/export story); follow-ups C32, C33
 4. ~~C9, C13, C11~~ (strict warnings actually usable)
 5. ~~C21, C23-C25, C27, C28, C31, C32~~ (2026-10-22)
-6. ~~C35~~ (2026-10-23); on hold: C29, C34, MF items, T1
+6. ~~C35~~ (2026-10-23), ~~C36~~ (2026-10-28), ~~MF10~~ (2026-10-30, MF9/MF11 dropped); on hold: C29, C34, other MF items, T1
 
 ## Key decisions (kept from `rework.md`)
 
