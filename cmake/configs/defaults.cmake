@@ -35,5 +35,10 @@ endif()
 # dependency pass per source.
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
+# One TU per public header (`all_verify_interface_header_sets` target): checks
+# headers are self-contained, and gives header-only libs compile_commands
+# entries, so clangd parses them with the lib's flags (C++23), not guessed ones.
+set(CMAKE_VERIFY_INTERFACE_HEADER_SETS ON)
+
 # Includes
 include(GNUInstallDirs)

@@ -17,7 +17,7 @@ Standard: Auto
 ### Limits
 ################################################################################
 
-ColumnLimit: 120
+ColumnLimit: 100
 MaxEmptyLinesToKeep: 2
 
 KeepEmptyLines:
@@ -91,7 +91,7 @@ AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortCompoundRequirementOnASingleLine: true
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: false
 AllowShortNamespacesOnASingleLine: false
 AlwaysBreakBeforeMultilineStrings: false

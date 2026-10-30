@@ -1,2 +1,5 @@
 #include <cstdio>
-int main() { std::puts("hello"); }
+
+int main() {
+    std::puts("hello");
+}

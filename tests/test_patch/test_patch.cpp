@@ -5,4 +5,6 @@
 static_assert(PX_PATCHED_ARGPARSE == 1, "argparse patch not applied");
 static_assert(PX_PATCHED_UTFCPP == 1, "utfcpp patch not applied");
 
-int main() { return 0; }
+int main() {
+    return 0;
+}

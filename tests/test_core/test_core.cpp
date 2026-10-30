@@ -3,12 +3,12 @@
 #include "logger.hpp"
 
 // Not assert(): NDEBUG compiles it out, so Release tests would check nothing.
-#define CHECK(expr)                                                            \
-    do {                                                                       \
-        if (!(expr)) {                                                         \
-            y::err("{}:{}: CHECK failed: {}", __FILE__, __LINE__, #expr);      \
-            std::exit(1);                                                      \
-        }                                                                      \
+#define CHECK(expr)                                                       \
+    do {                                                                  \
+        if (!(expr)) {                                                    \
+            y::err("{}:{}: CHECK failed: {}", __FILE__, __LINE__, #expr); \
+            std::exit(1);                                                 \
+        }                                                                 \
     } while (false)
 
 int main() {
@@ -20,18 +20,18 @@ int main() {
     y::println("[1] Primitive & Character Formatting:\n");
 
     // Test char vs integer
-    char ch = 'Z';
-    std::string const res_char = y::format("Char: {}", ch);
+    char              ch       = 'Z';
+    const std::string res_char = y::format("Char: {}", ch);
     CHECK(res_char == "Char: Z");
     y::println("  \u2713 Single char: {}", res_char);
 
     // Test booleans
-    std::string const res_bool = y::format("Bools: {} / {}", true, false);
+    const std::string res_bool = y::format("Bools: {} / {}", true, false);
     CHECK(res_bool == "Bools: true / false");
     y::println("  \u2713 Booleans: {}", res_bool);
 
     // Test numbers (int, float, negative)
-    std::string const res_nums = y::format("Int: {}, Float: {}, Neg: {}", 42, 3.1415, -100);
+    const std::string res_nums = y::format("Int: {}, Float: {}, Neg: {}", 42, 3.1415, -100);
     y::println("  \u2713 Numbers: {}", res_nums);
 
     // ------------------------------------------------------------------------
@@ -48,13 +48,13 @@ int main() {
     CHECK(y::format("{}", null_c_str) == "(null)");
 
     // Mutable char array (char*) - must NOT print as hexadecimal address
-    char mut_str[] = "mutable string";
-    std::string const res_mut = y::format("{}", mut_str);
+    char              mut_str[] = "mutable string";
+    const std::string res_mut   = y::format("{}", mut_str);
     CHECK(res_mut == "mutable string");
     y::println("  \u2713 Mutable char*: {}", res_mut);
 
     // std::string
-    std::string const cpp_str = "std::string object";
+    const std::string cpp_str = "std::string object";
     CHECK(y::format("{}", cpp_str) == "std::string object");
 
     // std::string_view
@@ -67,11 +67,11 @@ int main() {
     // ------------------------------------------------------------------------
     y::println("\n[3] Pointer Formatting:");
 
-    int dummy = 10;
-    int* ptr = &dummy;
+    int   dummy    = 10;
+    int*  ptr      = &dummy;
     void* null_ptr = nullptr;
 
-    std::string const res_ptr = y::format("Ptr: {}, Null: {}", static_cast<void*>(ptr), null_ptr);
+    const std::string res_ptr = y::format("Ptr: {}, Null: {}", static_cast<void*>(ptr), null_ptr);
     CHECK(res_ptr.find("0x") != std::string::npos);
     CHECK(res_ptr.find("nullptr") != std::string::npos);
     y::println("  \u2713 Pointer outputs: {}", res_ptr);
@@ -82,7 +82,7 @@ int main() {
     y::println("\n[4] Heap Overflow / Migration Test:");
 
     y::detail::fmt::DynamicBuffer<16> tiny_buf; // Small 16-byte capacity
-    std::string const large_input = "This payload is significantly larger than 16 bytes!";
+    const std::string large_input = "This payload is significantly larger than 16 bytes!";
     y::detail::fmt::to_buffer(tiny_buf, "{}", large_input);
 
     CHECK(tiny_buf.view() == large_input);
@@ -98,8 +98,8 @@ int main() {
     y::warn("Warn message");
     y::err("Err message");
 
-    y::info("Formatted Info: User {} (ID: {}) logged in", "Alice", 1001);
-    y::err("Formatted Err: Failed to connect to {}:{}", "127.0.0.1", 8080);
+    y::info("Formatted Info: User {} (ID: {}) logged in", "Alice", 1'001);
+    y::err("Formatted Err: Failed to connect to {}:{}", "127.0.0.1", 8'080);
 
     // Test with_* early exit helpers
     y::println("\n[6] Testing Early Exit Helpers:");
