@@ -56,6 +56,8 @@ import_dependency(glaze::glaze
   GITHUB    stephenberry/glaze
   TAG       v7.9.1
   SUBDIR    include
+  # README: CI covers GCC 13+, Clang 18+, latest MSVC and Apple Clang only.
+  COMPILERS GNU=13 Clang=18 AppleClang=17 MSVC=19.50
   OPTIONS   glaze_BUILD_TEST=OFF
             glaze_INSTALL=OFF
 )

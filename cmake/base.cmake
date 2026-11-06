@@ -74,6 +74,7 @@ macro(post_project)
   log_status("Compiler for C++ -> ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
   log_status("Compiler for C   -> ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})")
 
+  include(${__base_dir}/configs/compiler.cmake)
   include(${__base_dir}/configs/options.cmake)
   include(${__base_dir}/configs/compile_commands.cmake)
 

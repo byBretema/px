@@ -2,9 +2,7 @@
 # Setup some sane defaults
 #-------------------------------------------------------------------------------
 
-# C++ standard: a compile feature on every own target (make_*), so installed
-# libs carry it to consumers. CMAKE_CXX_STANDARD can raise it, not lower it.
-set(__cxx_std cxx_std_23)
+# C++ standard: __cxx_std from compiler.cmake (PX_CXX_STANDARD)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

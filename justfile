@@ -64,7 +64,7 @@ _list_all:
 # Always configures (e.g. after editing CMakePresets.json)
 config:
     @echo
-    @echo "- - - - - - - - - - - - - - - - - [  CONFIG ] - - - - - - - - - - - - - - - - -"
+    @echo "- - - - - - - - - - - - - - - - - [ CONFIG ] - - - - - - - - - - - - - - - - -"
     @cmake -S "{{ _root }}" --preset {{ preset }} {{ config_flags }}
 
 # Configures only on first use, preset switch or config_flags; otherwise
@@ -88,7 +88,7 @@ build *targets: _config
     #!/usr/bin/env bash
     set -eu;
     echo
-    echo "- - - - - - - - - - - - - - - - - [  BUILD  ] - - - - - - - - - - - - - - - - -"
+    echo "- - - - - - - - - - - - - - - - - [ BUILD ] - - - - - - - - - - - - - - - - -"
     echo
 
     cmake_args=()
@@ -101,7 +101,7 @@ run target *args: (build target)
     #!/usr/bin/env bash
     set -eu;
     echo
-    echo "- - - - - - - - - - - - - - - - - [   RUN   ] - - - - - - - - - - - - - - - - -"
+    echo "- - - - - - - - - - - - - - - - - [ RUN ] - - - - - - - - - - - - - - - - - -"
     echo
     # Path written by CMake (make_exe/make_test).
     bin="$(cat "$(sed -n 2p "{{ _active }}")/exe/{{ target }}" 2>/dev/null || true)"

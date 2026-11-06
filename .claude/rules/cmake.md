@@ -17,7 +17,7 @@ paths:
 - `snake_case`; tests `test_` prefix, plain names, top level only.
 - Libs: real target `<PROJECT_NAME>_<name>`, `EXPORT_NAME <name>`, alias `<PROJECT_NAME>::<name>`. Exes: plain at top level, prefixed when nested.
 - Sources and headers globbed over the whole target dir; never listed by hand. Lib headers: `FILE_SET HEADERS` with the dir as include root, installed to `include/<ns>/<name>/`.
-- `cxx_std_23` as a compile feature (`PUBLIC` on libs); `CMAKE_CXX_STANDARD` can only raise it. Visibility hidden, PIC on, LTO on Release/RelWithDebInfo when supported.
+- Standard: `PX_CXX_STANDARD` (project, default 23) as a `cxx_std_<n>` compile feature (`PUBLIC` on libs); `CMAKE_CXX_STANDARD` can only raise it. Dep version floors: `import_dependency(... COMPILERS GNU=13 ...)`, not central. Visibility hidden, PIC on, LTO on Release/RelWithDebInfo when supported.
 - Warning flags `PRIVATE`, never leaked to consumers.
 - Libs link deps as `$<BUILD_INTERFACE:all_dependencies>`: deps never appear in the export.
 

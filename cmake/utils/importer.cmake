@@ -189,6 +189,10 @@ endmacro()
 #                      set), run after a fresh fetch. See cmake/patches/README.md.
 #   OPTIONS            (optional) CMake variables to set before the library's
 #                      own CMake runs.  Pass as KEY=VALUE pairs.
+#   COMPILERS          (optional) Minimum C++ compiler versions the dep needs,
+#                      as ID=VERSION (CMAKE_CXX_COMPILER_ID), e.g. GNU=13
+#                      Clang=18 MSVC=19.50. Checked before fetching; compilers
+#                      not listed are not checked.
 #   DEFINES            (optional) Preprocessor definitions for px targets
 #                      using the dep (e.g. config macros of header-only libs).
 #                      Consumer side only: the dep's own build never sees
@@ -201,7 +205,7 @@ endmacro()
 # once and the include directory is shared.
 #-------------------------------------------------------------------------------
 function(import_dependency qualified_target)
-  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH;BUILD_TYPE" "OPTIONS;DEFINES" ${ARGN})
+  cmake_parse_arguments(ARG "" "REPOSITORY;GITHUB;GITLAB;BITBUCKET;TAG;SUBDIR;PATCH;BUILD_TYPE" "OPTIONS;DEFINES;COMPILERS" ${ARGN})
 
   # --- Resolve repository URL from shorthand or full URL ---
   set(shorthand "")
@@ -238,6 +242,16 @@ function(import_dependency qualified_target)
   endif()
   list(GET parts 0 ns)
   list(GET parts 1 target)
+
+  # --- Compiler floor: fail before fetching, naming the dep ---
+  foreach(floor ${ARG_COMPILERS})
+    if(NOT floor MATCHES "^([A-Za-z]+)=([0-9.]+)$")
+      log_fatal("import_dependency: COMPILERS must be ID=VERSION, got: ${floor}")
+    endif()
+    if(CMAKE_MATCH_1 STREQUAL CMAKE_CXX_COMPILER_ID AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS CMAKE_MATCH_2)
+      log_fatal("import_dependency: ${qualified_target} needs ${CMAKE_MATCH_1} ${CMAKE_MATCH_2}+, found ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+  endforeach()
 
   # --- Derive a unique FetchContent ID from the URL ---
   if(shorthand)
