@@ -125,6 +125,11 @@ test *tests: (build tests)
     fi
     ctest "${args[@]}" | grep -v "^    Start"
 
+# CPack archive of the install tree (<build>/packages/)
+[no-exit-message]
+package: _config
+    @cmake --build --preset {{ preset }} -j "$(just _num_of_jobs)" --target package
+
 # --- Cleanup ---
 
 # all / build / deps

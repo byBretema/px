@@ -42,3 +42,16 @@ set(CMAKE_VERIFY_INTERFACE_HEADER_SETS ON)
 
 # Includes
 include(GNUInstallDirs)
+
+# Relocatable installs (packages): installed exes find px shared libs relative
+# to themselves, not through the build tree's absolute RPATH (stripped on
+# install). Windows needs none: DLLs install next to exes (bin/).
+if(NOT DEFINED CMAKE_INSTALL_RPATH)
+  if(APPLE)
+    set(__origin "@loader_path")
+  else()
+    set(__origin "$ORIGIN")
+  endif()
+  file(RELATIVE_PATH __bin_to_lib "/${CMAKE_INSTALL_BINDIR}" "/${CMAKE_INSTALL_LIBDIR}")
+  set(CMAKE_INSTALL_RPATH "${__origin}/${__bin_to_lib}" "${__origin}")
+endif()

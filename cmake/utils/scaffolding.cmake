@@ -274,4 +274,7 @@ function(setup_export)
   string(JOIN ", " names ${names})
   log_status("Export generated (${__export_namespace} :: ${names})")
 
+  include(${__base_dir}/configs/package.cmake)
+  log_status("Package -> ${CPACK_GENERATOR} (${CPACK_PACKAGE_DIRECTORY})")
+
 endfunction()

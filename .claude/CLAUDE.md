@@ -22,4 +22,5 @@ C++ project template: CMake wrapper managing deps, opinionated defaults. Project
 - Changing a dep's URL/`TAG`/`PATCH` re-fetches it; local edits in `.deps/<id>-src` block the re-fetch, and the error prints how to save them as a patch.
 - As a subproject: tests, install rules, `compile_commands`, `active_preset` are top-level only. Nested px projects share deps (first import wins); the last-loaded px copy's CMake functions win.
 - Installed package has no deps: installed STATIC libs using compiled deps can't be linked by consumers.
+- `just package` (`--target package`/`package_source`): CPack TGZ (ZIP on Windows) of the install tree into `<build>/packages/`; `cpack -G <gen>` for others. Installed exes find px shared libs via relative RPATH (`$ORIGIN/../lib`).
 - Linux primary (CI); non-CI code must also work on Windows and macOS. CMake floor 3.28.
