@@ -23,18 +23,15 @@ endif()
 # failed fetch never leaves a half-made `dir`. Shallow `git fetch <ref>` works
 # for tags, branches and commit SHAs, unlike `git clone --branch`.
 # Submodules are not fetched (current deps only use them for docs/tests).
-function(__fetch_source url ref patch fetch_id dir)
+function(__fetch_source name url ref patch fetch_id dir)
   set(tmp "${dir}.tmp")
   file(REMOVE_RECURSE "${tmp}")
   file(MAKE_DIRECTORY "${tmp}")
-  foreach(args
-      "init;-q"
-      "remote;add;origin;${url}"
-      "fetch;-q;--depth;1;origin;${ref}"
-      "checkout;-q;FETCH_HEAD"
-      "tag;px-base")
-    __git("${tmp}" ${args})
-  endforeach()
+  __git("${tmp}" init -q)
+  __git("${tmp}" remote add origin "${url}")
+  __fetch_ref("${name}" "${url}" "${ref}" "${tmp}")
+  __git("${tmp}" checkout -q FETCH_HEAD)
+  __git("${tmp}" tag px-base)
 
   if(patch MATCHES "\\.(patch|diff)$")
     __git("${tmp}" apply --whitespace=nowarn "${patch}")
@@ -52,6 +49,34 @@ function(__fetch_source url ref patch fetch_id dir)
 
   file(REMOVE_RECURSE "${dir}")
   file(RENAME "${tmp}" "${dir}")
+endfunction()
+
+# The only network step, so its failure gets a diagnosis instead of raw git
+# output: ls-remote tells an unreachable repo from a missing ref.
+# GIT_TERMINAL_PROMPT=0: a wrong GitHub URL asks for credentials (looks like a
+# private repo), which would hang configure on a terminal.
+function(__fetch_ref name url ref dir)
+  set(git ${CMAKE_COMMAND} -E env GIT_TERMINAL_PROMPT=0 "${GIT_EXECUTABLE}")
+  execute_process(COMMAND ${git} fetch -q --depth 1 origin "${ref}"
+    WORKING_DIRECTORY "${dir}"
+    RESULT_VARIABLE rc
+    ERROR_VARIABLE err)
+  if(rc EQUAL 0)
+    return()
+  endif()
+  file(REMOVE_RECURSE "${dir}")
+
+  execute_process(COMMAND ${git} ls-remote -q "${url}" HEAD
+    RESULT_VARIABLE reachable_rc
+    OUTPUT_QUIET ERROR_QUIET)
+  if(reachable_rc EQUAL 0)
+    set(why "TAG '${ref}' not found in ${url}: check the tag, branch or commit name")
+  else()
+    set(why "cannot reach ${url}: check the URL/repo name and the network (private repos need git credentials)")
+  endif()
+  string(STRIP "${err}" err)
+  string(REGEX REPLACE "([^\n]+)" "    \\1" err "${err}")
+  log_fatal("import_dependency: ${name}: ${why}\n  git said:\n${err}")
 endfunction()
 
 # Runs git in `dir`; on failure deletes `dir` (always a .tmp checkout).
@@ -318,7 +343,7 @@ function(import_dependency qualified_target)
         set(status "From fetch -> ")
       endif()
       __check_clean("${src_dir}" "${ns}")
-      __fetch_source("${repo_url}" "${ARG_TAG}" "${ARG_PATCH}" "${fetch_id}" "${src_dir}")
+      __fetch_source("${qualified_target}" "${repo_url}" "${ARG_TAG}" "${ARG_PATCH}" "${fetch_id}" "${src_dir}")
       file(WRITE "${stamp_file}" "${stamp}")
     endif()
 

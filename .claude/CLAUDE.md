@@ -13,6 +13,7 @@ C++ project template: CMake wrapper managing deps, opinionated defaults. Project
 
 ## Verify
 - `debug-strict` and `debug-sanitizers`: configure, build, test. CI runs `debug-sanitizers-strict` (Ubuntu 24.04, GCC + Clang).
+- Public lib headers changed: also build `all_verify_interface_header_sets` (each header must compile on its own).
 - Read the configure log (sections `Toolchain`, `Dependencies`, `Export`).
 
 ## Gotchas
