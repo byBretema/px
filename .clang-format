@@ -1,7 +1,7 @@
 
 ---
 
-# clang-format --version  =>  21.1.x
+# clang-format-version: 21.1.8
 # https://releases.llvm.org/21.1.0/tools/clang/docs/ClangFormatStyleOptions.html
 
 

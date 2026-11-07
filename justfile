@@ -154,6 +154,10 @@ _clean_all:
 format:
     @cmake -P "{{ _root }}/cmake/utils/format.cmake"
 
+# Fails on unformatted files (what CI runs)
+format_check:
+    @cmake -D CHECK=ON -P "{{ _root }}/cmake/utils/format.cmake"
+
 # --- Scaffolding ---
 
 add_exe name:
