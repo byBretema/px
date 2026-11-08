@@ -10,6 +10,24 @@ One repo can hold a single app or a whole monorepo of apps and libraries, and
 a px project can also be pulled into another CMake project (px or not) as a
 subproject.
 
+## Repository
+
+```
+framework/    px itself: the CMake code projects include
+template/     the skeleton a new project starts from
+tests/        projects checking px setups (CI)
+```
+
+To start a project, copy `template/`, rename the project in its
+`CMakeLists.txt`, and add targets. `tests/fixtures/full_project_01` is a
+worked example: its `projects/` and `tests/` laid over the template.
+
+The template finds px through `PX_DIR` (cache variable, or the `PX_DIR`
+environment variable for both CMake and `just`), by default `../framework`,
+so a copy beside `framework/` works as is. Fetching px by version is planned.
+
+Commands below run from the project directory (`template/`).
+
 ## Requirements
 
 - CMake 3.28+, Ninja, git, and a C++23 compiler. Deps may need newer ones
@@ -25,8 +43,8 @@ Windows and macOS are supported.
 ```sh
 just build              # configure (first time) and build everything
 just test               # build and run all tests
-just run test_app       # build and run one executable
 just add_exe hello      # new executable in projects/hello/
+just run hello          # build and run one executable
 just add_lib util       # new library in projects/util/ (SHARED by default)
 ```
 
@@ -44,6 +62,7 @@ ctest --preset debug
 
 ```
 CMakeLists.txt        project name, version, and the px calls (see below)
+justfile              shortcuts
 CMakePresets.json     build presets
 cmake/deps.cmake      the third-party dependencies, one block each
 cmake/patches/        local changes to dependencies
@@ -58,7 +77,7 @@ The root `CMakeLists.txt` is all the top-level CMake a project needs:
 
 ```cmake
 cmake_minimum_required(VERSION 3.28)
-include(cmake/base.cmake)
+include(../framework/base.cmake)
 
 pre_project()
 project(myproj VERSION 1.0.0)
@@ -88,7 +107,7 @@ error.
 make_exe(app DEPS myproj::util fmt::fmt)
 make_lib(util STATIC DEPS glm::glm PRIVATE_DEPS fmt::fmt)
 make_lib(net SHARED PRIVATE_DEPS asio::asio)
-make_hlib(math DEPS glm::glm)          # same as make_lib(math HEADER_ONLY ...)
+make_lib(math HEADER_ONLY DEPS glm::glm)
 make_test(test_util DEPS myproj::util)
 ```
 
@@ -140,7 +159,7 @@ Then any target can list `fmt::fmt` in its `DEPS`. Other keywords:
 |---|---|
 | `DEFINES` | Preprocessor definitions for targets using the dep (config macros of header-only libs, e.g. `ASIO_STANDALONE`). |
 | `PATCH` | A `.patch` file or a CMake script applied after fetching. See [cmake/patches/README.md](cmake/patches/README.md). |
-| `BUILD_TYPE` | Build this dep in another configuration (deps build as `Release` by default: `DEPS_BUILD_TYPE`). |
+| `BUILD_TYPE` | Build this dep in another configuration (deps build as `Release` by default: `PX_DEPS_BUILD_TYPE`). |
 | `COMPILERS` | Minimum compiler versions, e.g. `GNU=13 Clang=18`; checked before fetching. |
 | `PACKAGE` | The dep's `find_package` name, when it isn't the namespace (utfcpp's is `utf8cpp`). |
 | `INSTALL_HEADERS` | Header-only dep whose own install rules can't be used: px installs its headers instead. |
@@ -171,11 +190,12 @@ Options, settable with `-D` or in a preset:
 
 | Option | Default | |
 |---|---|---|
-| `USE_CCACHE`, `USE_MOLD`, `USE_COMPILE_COMMANDS` | `ON` | Used when found. |
-| `ENABLE_ASAN`, `ENABLE_UBSAN` | `OFF` | Set by the sanitizer presets. |
-| `FORCE_ERROR` | `OFF` | Warnings as errors; set by `-strict` presets. |
-| `DEPS_DIR` | `.deps/` | Where dependency sources live (or `$DEPS_DIR`). |
-| `DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. |
+| `PX_USE_CCACHE`, `PX_USE_MOLD`, `PX_USE_COMPILE_COMMANDS` | `ON` | Used when found. |
+| `PX_ENABLE_ASAN`, `PX_ENABLE_UBSAN` | `OFF` | Set by the sanitizer presets. |
+| `PX_FORCE_ERROR` | `OFF` | Warnings as errors; set by `-strict` presets. |
+| `PX_DEPS_DIR` | `.deps/` | Where dependency sources live (or `$PX_DEPS_DIR`). |
+| `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. |
+| `PX_DIR` | `../framework` | Where px is (or `$PX_DIR`). |
 
 `compile_commands.json` is copied to the repo root on every build, so clangd
 works with no setup.
@@ -207,7 +227,7 @@ target_link_libraries(app PRIVATE myproj::util)
   the consumer's side.
 - A dependency without usable install rules fails at generate with "requires
   target ... that is not in any export set". The fixes are listed in the
-  `import_dependency` docs in `cmake/utils/importer.cmake`: turn its install
+  `import_dependency` docs in `framework/utils/importer.cmake`: turn its install
   option on in `OPTIONS`, use `INSTALL_HEADERS`, or keep it in `PRIVATE_DEPS`
   of a SHARED lib.
 
@@ -240,6 +260,28 @@ Style lives in `.clang-format`. Its `# clang-format-version: <version>` line
 pins the clang-format version, since each release formats slightly
 differently. A different version warns, and an older major version fails.
 `CLANG_FORMAT=<path>` picks a specific binary.
+
+## Testing px itself
+
+The fixtures in `tests/fixtures/` build px in these setups:
+- under a plain CMake parent;
+- nested in another px project;
+- installed and used through `find_package`;
+- with a conflicting dependency version;
+- as full projects made from the template (`full_project_*`). These are copied
+  into the build dir and built with a template preset, `PX_TEST_PRESET`
+  (default `debug-strict`).
+
+From the repo root:
+
+```sh
+just test                                  # all
+just test full_project_01 nest             # only these
+just preset=debug-sanitizers test          # full projects with another preset
+```
+
+Plain CMake: `cmake -S tests -B .build/tests [-D PX_TEST_PRESET=<preset>]`,
+then `ctest --test-dir .build/tests -j 4`.
 
 ## Cleaning
 

@@ -1,0 +1,2 @@
+add_subdirectory(test_app)
+add_subdirectory(test_core)

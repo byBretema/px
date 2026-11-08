@@ -10,8 +10,8 @@ paths:
 - `cmake_minimum_required(VERSION 3.28)`, presets version `8`. Newer features (`CMAKE_LINKER_TYPE`, `CMAKE_MSVC_RUNTIME_CHECKS`) get minimal workarounds.
 - `function()` by default; `macro()` only when the caller's scope must change (`pre_project`, `post_project`, `setup_testing`, logger).
 - Internal functions/vars: `__` prefix (`__glob_sources`, `__base_dir`). Locals: `snake_case`. Out vars via `PARENT_SCOPE`.
-- Options: `USE_*` tooling, `ENABLE_*` sanitizers, `FORCE_*` behaviour.
-- `include_guard(DIRECTORY)` in every `cmake/` module; `GNUInstallDirs` for install paths.
+- Options and user-facing cache vars: `PX_` prefix (global cache, must not clash with a parent project's). `PX_USE_*` tooling, `PX_ENABLE_*` sanitizers, `PX_FORCE_*` behaviour.
+- `include_guard(DIRECTORY)` in every `framework/` module; `GNUInstallDirs` for install paths.
 
 ## Targets
 - `snake_case`; tests `test_` prefix, plain names, top level only.
@@ -24,8 +24,8 @@ paths:
 
 ## Dependencies
 - Only through `import_dependency()`; `SUBDIR` required, no auto-detection.
-- Importer owns sources: shallow `git fetch <TAG>` into `DEPS_DIR/<id>-src`, keyed by `<id>.stamp` (URL@TAG + PATCH hash). Sources shared across build dirs; build trees (`<build>/_deps/`) never shared.
-- `FetchContent_Declare(SOURCE_DIR ... SYSTEM EXCLUDE_FROM_ALL)` + `MakeAvailable` only for `add_subdirectory`. `EXCLUDE_FROM_ALL` keeps dep install rules out; `setup_export` adds `install(SCRIPT <dep build>/cmake_install.cmake)` only for deps installed targets need.
+- Importer owns sources: shallow `git fetch <TAG>` into `PX_DEPS_DIR/<id>-src`, keyed by `<id>.stamp` (URL@TAG + PATCH hash). Sources shared across build dirs; build trees (`<build>/_deps/`) never shared.
+- `FetchContent_Declare(SOURCE_DIR ... SYSTEM EXCLUDE_FROM_ALL)` + `MakeAvailable` only for `add_subdirectory`. `EXCLUDE_FROM_ALL` keeps dep install rules out; `setup_export` adds `install(SCRIPT <dep build>/cmake_install.cmake)` only for deps installed targets need, run under the dep's build type (install(EXPORT) rules are per config).
 - Dep install options defaulting OFF as a subproject go ON in `OPTIONS` (harmless: only run when needed). No usable install rules: `INSTALL_HEADERS` (header-only) or keep it out of installed interfaces.
 - `OPTIONS` use `CACHE FORCE`: the only way to override dep cache entries before `add_subdirectory`.
 - Dep build type: plain `set(CMAKE_BUILD_TYPE)` in function scope, not `CACHE FORCE` (reconfigure loops).

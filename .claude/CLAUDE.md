@@ -2,9 +2,11 @@
 
 C++ project template: CMake wrapper managing deps, opinionated defaults. Projects made from it must also work as subprojects.
 
+Repo: `framework/` (the px CMake code), `template/` (bare project skeleton; finds px via `PX_DIR`, default `../framework`), `tests/` (ctest driver + `fixtures/`: setup projects, and `full_project_*` = projects/ + tests/ laid over a copy of the template by `tests/instantiate.cmake`). Paths below under `utils/`, `configs/` are in `framework/`; `cmake/`, `projects/` are project paths.
+
 ## Map
-- `post_project()` (`cmake/base.cmake`): options, toolchain, deps (`cmake/deps.cmake`, `utils/importer.cmake`), defaults, warnings, sanitizers.
-- `make_*`: `cmake/utils/scaffolding.cmake`; `setup_export` and dep installs: `utils/export.cmake`; file extensions: `utils/sources.cmake`. One target per `projects/<name>/` dir, whole tree globbed; nested `CMakeLists.txt` is an error.
+- `post_project()` (`framework/base.cmake`): options, toolchain, deps (the project's optional `cmake/deps.cmake`, `utils/importer.cmake`), defaults, warnings, sanitizers.
+- `make_*`: `utils/scaffolding.cmake`; `setup_export` and dep installs: `utils/export.cmake`; file extensions: `utils/sources.cmake`. One target per `projects/<name>/` dir, whole tree globbed; nested `CMakeLists.txt` is an error.
 - `just` only triggers (`just --list`); logic lives in CMake/presets and must work with plain `cmake --preset`.
 
 ## Common changes
@@ -12,8 +14,9 @@ C++ project template: CMake wrapper managing deps, opinionated defaults. Project
 - Target: `just add_exe|add_lib <name> [SHARED|STATIC|HEADER_ONLY]`. Targets link only what they list: `make_*(<name> ... DEPS <targets>)`, compiled libs also `PRIVATE_DEPS`. Link libs as `<PROJECT_NAME>::<name>` (`px::core`), never by plain name.
 
 ## Verify
-- `debug-strict` and `debug-sanitizers`: configure, build, test. CI runs `debug-sanitizers-strict` (Ubuntu 24.04, GCC + Clang).
-- Public lib headers changed: also build `all_verify_interface_header_sets` (each header must compile on its own).
+- `just [preset=<preset>] test [<fixture>...]` (root justfile; = `cmake -S tests -B .build/tests -D PX_TEST_PRESET=<preset> && ctest --test-dir .build/tests -j 4`), with `debug-strict` and `debug-sanitizers` (plain parent, nested px, install, `find_package` consumer, dep version conflict, full projects with the template's presets and format check). CI runs `debug-sanitizers-strict` (Ubuntu 24.04, GCC + Clang).
+- Full projects use their copy's own `.deps`: one deps dir can't hold the same dep with different patches (sources re-fetch back and forth).
+- Full projects' build also compiles each public header on its own (`all_verify_interface_header_sets`).
 - Read the configure log (sections `Toolchain`, `Dependencies`, `Export`).
 
 ## Gotchas

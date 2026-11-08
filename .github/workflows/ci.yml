@@ -32,10 +32,13 @@ jobs:
       # The version pinned in .clang-format: other versions format differently.
       - name: Install clang-format
         run: |
-          pipx install "clang-format==$(sed -n 's/^# clang-format-version: *\([0-9.]*\).*/\1/p' .clang-format).*"
+          pipx install "clang-format==$(sed -n 's/^# clang-format-version: *\([0-9.]*\).*/\1/p' template/.clang-format).*"
 
+      # On the full projects, as instantiated from the template.
       - name: Check
-        run: cmake -D CHECK=ON -P cmake/utils/format.cmake
+        run: |
+          cmake -S tests -B .build/tests
+          ctest --test-dir .build/tests -R '_(copy|format)$' --output-on-failure
 
   build:
     name: ${{ matrix.compiler }} / ${{ matrix.preset }}
@@ -66,22 +69,21 @@ jobs:
       - name: Cache dependency sources
         uses: actions/cache@v4
         with:
-          path: .deps
-          key: deps-${{ hashFiles('cmake/deps.cmake', 'cmake/patches/**') }}
+          path: |
+            tests/.deps
+            .build/tests/*/.deps
+          key: deps-${{ hashFiles('template/cmake/**', 'tests/fixtures/*/cmake/**') }}
           restore-keys: deps-
 
       - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: .cache/ccache
+          path: .build/tests/ccache
           key: ccache-${{ matrix.compiler }}-${{ matrix.preset }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.compiler }}-${{ matrix.preset }}-
 
-      - name: Configure
-        run: cmake --preset ${{ matrix.preset }}
-
-      - name: Build
-        run: cmake --build --preset ${{ matrix.preset }}
-
+      # Fixtures, and the full projects built with the template's preset.
       - name: Test
-        run: ctest --preset ${{ matrix.preset }}
+        run: |
+          cmake -S tests -B .build/tests -D PX_TEST_PRESET=${{ matrix.preset }}
+          ctest --test-dir .build/tests -j 4 -E '_format$' --output-on-failure
