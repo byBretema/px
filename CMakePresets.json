@@ -5,6 +5,7 @@
       "hidden": true,
       "name": "base",
       "generator": "Ninja",
+      "installDir": "${sourceDir}/.install/${presetName}",
       "cacheVariables": {
         "ACTIVE_PRESET": "${presetName}",
         "ENABLE_ASAN": "OFF",

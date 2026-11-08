@@ -125,6 +125,11 @@ test *tests: (build tests)
     fi
     ctest "${args[@]}" | grep -v "^    Start"
 
+# Install tree into the preset's installDir (.install/<preset>/)
+[no-exit-message]
+install: _config
+    @cmake --build --preset {{ preset }} -j "$(just _num_of_jobs)" --target install
+
 # CPack archive of the install tree (<build>/packages/)
 [no-exit-message]
 package: _config
@@ -138,6 +143,7 @@ clean target="build":
 
 _clean_build:
     @rm -rf "{{ _build_dir }}"
+    @rm -rf "{{ _root }}/.install"
     @rm -rf "{{ _cache_dir }}"
     @rm -f "{{ _root }}/compile_commands.json"
 

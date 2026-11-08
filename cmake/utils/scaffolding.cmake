@@ -46,6 +46,49 @@ function(__glob_sources root_dir out_sources out_headers)
 endfunction()
 
 
+# Non-imported STATIC libs reachable from all_dependencies (deps of deps
+# too, e.g. cpr's curl). Links can be genexes ($<LINK_ONLY:x>,
+# $<$<CONFIG:..>:x>): every word naming a target counts, both branches of a
+# condition included.
+function(__static_deps out)
+  set(found "")
+  set(queue all_dependencies)
+  set(seen "")
+  while(queue)
+    list(POP_FRONT queue item)
+    if(NOT TARGET ${item})
+      continue()
+    endif()
+    get_target_property(aliased ${item} ALIASED_TARGET)
+    if(aliased)
+      set(item ${aliased})
+    endif()
+    if(item IN_LIST seen)
+      continue()
+    endif()
+    list(APPEND seen ${item})
+    get_target_property(imported ${item} IMPORTED)
+    if(imported)
+      continue()
+    endif()
+    get_target_property(type ${item} TYPE)
+    if(type STREQUAL "STATIC_LIBRARY")
+      list(APPEND found ${item})
+    endif()
+    set(links "")
+    foreach(prop INTERFACE_LINK_LIBRARIES LINK_LIBRARIES)
+      get_target_property(value ${item} ${prop})
+      if(value)
+        list(APPEND links ${value})
+      endif()
+    endforeach()
+    string(REGEX MATCHALL "[A-Za-z0-9_.+-]+(::[A-Za-z0-9_.+-]+)*" words "${links}")
+    list(APPEND queue ${words})
+  endwhile()
+  set(${out} ${found} PARENT_SCOPE)
+endfunction()
+
+
 # Public headers as a FILE_SET: in-tree consumers get `dir` as include root,
 # and setup_export installs the set (subdirs included) next to the library.
 function(__add_header_set name scope dir)
@@ -109,9 +152,15 @@ function(make_lib name type)
   # Keep symbols of static libs linked into a shared lib (e.g. fmt) private,
   # so they cannot satisfy or clash with a consumer's own copies.
   # MSVC: not needed, DLLs export only dllexport'd symbols.
-  # Apple: not covered; ld64 has no --exclude-libs, so dylibs still export
-  # them (per-archive -hidden-l<name> / -load_hidden would be needed).
-  if(type STREQUAL "SHARED" AND NOT APPLE AND NOT MSVC)
+  if(type STREQUAL "SHARED" AND APPLE)
+    # ld64 has no --exclude-libs: each archive is loaded hidden instead.
+    # These options precede the link libraries, and ld64 resolves from the
+    # first copy of an archive, so the plain copy linked later adds nothing.
+    __static_deps(static_deps)
+    foreach(dep IN LISTS static_deps)
+      target_link_options(${target} PRIVATE "LINKER:-load_hidden,$<TARGET_FILE:${dep}>")
+    endforeach()
+  elseif(type STREQUAL "SHARED" AND NOT MSVC)
     target_link_options(${target} PRIVATE "LINKER:--exclude-libs,ALL")
   endif()
 

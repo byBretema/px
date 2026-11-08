@@ -23,7 +23,7 @@ set(CPACK_VERBATIM_VARIABLES ON)
 # Source packages: tracked sources only, not build output, fetched deps or caches.
 set(CPACK_SOURCE_IGNORE_FILES
   "/\\.git(/|$)"  # a dir, or a file in git worktrees
-  "/\\.build/"
+  "/\\.build/" "/\\.install/"
   "/\\.deps/"
   "/\\.cache/"
   "/build/"
