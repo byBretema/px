@@ -143,13 +143,17 @@ function(__export_header target name kind)
 endfunction()
 
 
-# For `just run`.
+# For `just run`. Multi-config: the config `cmake --build` builds by default.
 function(__write_exe_path name)
-  set(out "${CMAKE_BINARY_DIR}/exe/${name}")
+  set(condition 1)
   if(__multi_config)
-    string(APPEND out "-$<CONFIG>")
+    set(default "${CMAKE_DEFAULT_BUILD_TYPE}")
+    if(NOT default)
+      list(GET CMAKE_CONFIGURATION_TYPES 0 default)
+    endif()
+    set(condition "$<CONFIG:${default}>")
   endif()
-  file(GENERATE OUTPUT "${out}" CONTENT "$<TARGET_FILE:${name}>")
+  file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/exe/${name}" CONTENT "$<TARGET_FILE:${name}>" CONDITION ${condition})
 endfunction()
 
 

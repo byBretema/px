@@ -8,6 +8,15 @@ set(PX_TEST_PRESET debug-strict CACHE STRING "Template preset the full projects 
 
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH repo)
 set(fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+
+# The template's bootstrap fetches tag v<its version>: it must be px's own.
+include("${repo}/framework/version.cmake")
+file(STRINGS "${repo}/template/cmake/px.cmake" line REGEX "^set\\(__px_version ")
+string(REGEX MATCH "[0-9][0-9.]*" template_version "${line}")
+if(NOT template_version VERSION_EQUAL PX_VERSION)
+  message(FATAL_ERROR "template/cmake/px.cmake has px ${template_version}, framework/version.cmake ${PX_VERSION}: keep them equal")
+endif()
+string(REPLACE "." "\\." px_version_regex "${PX_VERSION}")
 set(deps_dir "${CMAKE_CURRENT_SOURCE_DIR}/.deps")
 set(common -G Ninja -D CMAKE_BUILD_TYPE=Debug -D PX_FORCE_ERROR=ON -D PX_USE_COMPILE_COMMANDS=OFF
   -D "PX_DEPS_DIR=${deps_dir}" -D "PX_DIR=${repo}/framework")
@@ -30,22 +39,45 @@ function(add_fixture name)
 endfunction()
 
 # Shared, static and header-only libs with patched deps, built, tested and
-# installed, then used from a plain CMake project (consumer<variant>). Variant
-# _release: Release (LTO) with ASan + UBSan, used from a plain Release build,
-# which has neither: installed archives must hold no LTO objects, and libs
-# must bring the sanitizer runtime.
-foreach(variant "" _release)
+# installed, then used from a plain CMake project (consumer<variant>):
+# - _release: Release (LTO) with ASan + UBSan, used from a plain Release build,
+#   which has neither: installed archives must hold no LTO objects, and libs
+#   must bring the sanitizer runtime;
+# - _multi: Ninja Multi-Config, every config built, tested and installed.
+foreach(variant "" _release _multi)
   set(args "")
   set(consumer_args "")
-  if(variant)
+  set(configs "")
+  set(install ${CMAKE_COMMAND} --install lib${variant})
+  if(variant STREQUAL "_release")
     set(args -D CMAKE_BUILD_TYPE=Release -D PX_ENABLE_ASAN=ON -D PX_ENABLE_UBSAN=ON)
+    set(consumer_args -D CMAKE_BUILD_TYPE=Release)
+  elseif(variant STREQUAL "_multi")
+    set(configs Debug Release)
+    # The plain build (default target) builds every config.
+    set(args -G "Ninja Multi-Config" "-DCMAKE_CONFIGURATION_TYPES=Debug$<SEMICOLON>Release"
+      -D CMAKE_CROSS_CONFIGS=all -D CMAKE_DEFAULT_CONFIGS=all)
+    set(install ${CMAKE_COMMAND} --build lib${variant} --target install:all)
     set(consumer_args -D CMAKE_BUILD_TYPE=Release)
   endif()
   set(prefix "${CMAKE_CURRENT_BINARY_DIR}/lib${variant}-install")
   add_fixture(lib${variant} SOURCE lib ARGS -D "CMAKE_INSTALL_PREFIX=${prefix}" ${args})
-  add_test(NAME lib${variant}_test COMMAND ${CMAKE_CTEST_COMMAND} --test-dir lib${variant} --output-on-failure)
-  add_test(NAME lib${variant}_install COMMAND ${CMAKE_COMMAND} --install lib${variant})
-  set_tests_properties(lib${variant}_test lib${variant}_install PROPERTIES FIXTURES_REQUIRED lib${variant})
+  set(tests lib${variant}_install)
+  add_test(NAME lib${variant}_install COMMAND ${install})
+  if(configs)
+    foreach(config IN LISTS configs)
+      add_test(NAME lib${variant}_test_${config}
+        COMMAND ${CMAKE_CTEST_COMMAND} --test-dir lib${variant} -C ${config} --output-on-failure)
+      list(APPEND tests lib${variant}_test_${config})
+    endforeach()
+    # `just run`'s path file: the default config's exe.
+    add_test(NAME lib${variant}_run_path COMMAND sh -c "\"$(cat lib${variant}/exe/tool)\" && grep -q /Debug/ lib${variant}/exe/tool")
+    list(APPEND tests lib${variant}_run_path)
+  else()
+    add_test(NAME lib${variant}_test COMMAND ${CMAKE_CTEST_COMMAND} --test-dir lib${variant} --output-on-failure)
+    list(APPEND tests lib${variant}_test)
+  endif()
+  set_tests_properties(${tests} PROPERTIES FIXTURES_REQUIRED lib${variant})
   set_tests_properties(lib${variant}_install PROPERTIES FIXTURES_SETUP lib${variant}_installed)
 
   add_fixture(consumer${variant} SOURCE consumer AFTER lib${variant}_installed
@@ -132,7 +164,7 @@ set_tests_properties(bootstrap_repo PROPERTIES FIXTURES_SETUP bootstrap_repo_don
 set_tests_properties(bootstrap_configure PROPERTIES
   FIXTURES_REQUIRED "bootstrap_copy_done;bootstrap_repo_done"
   ENVIRONMENT_MODIFICATION PX_DIR=unset:
-  PASS_REGULAR_EXPRESSION "px +-> 0\\.1\\.0 \\([^)]*/\\.deps/px-HEAD/framework\\)"
+  PASS_REGULAR_EXPRESSION "px +-> ${px_version_regex} \\([^)]*/\\.deps/px-HEAD/framework\\)"
   FAIL_REGULAR_EXPRESSION "CMake Error")
 
 # One ccache for all, outside the fixture sources.

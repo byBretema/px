@@ -1,5 +1,5 @@
 # Third-party dependencies: one import_dependency() block each, then list them
-# in a target's DEPS. All keywords: px README, "Dependencies".
+# in a target's DEPS. All keywords: px docs/dependencies.md.
 #
 # import_dependency(fmt::fmt
 #   GITHUB    fmtlib/fmt
