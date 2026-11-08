@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-include(../../../framework/base.cmake)
+find_package(px 0.1 REQUIRED CONFIG PATHS "${CMAKE_CURRENT_LIST_DIR}/../../../framework" NO_DEFAULT_PATH)
 
 pre_project()
 project(nest)

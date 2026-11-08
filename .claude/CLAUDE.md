@@ -2,7 +2,7 @@
 
 C++ project template: CMake wrapper managing deps, opinionated defaults. Projects made from it must also work as subprojects.
 
-Repo: `framework/` (the px CMake code), `template/` (bare project skeleton; finds px via `PX_DIR`, default `../framework`), `tests/` (ctest driver + `fixtures/`: setup projects, and `full_project_*` = projects/ + tests/ laid over a copy of the template by `tests/instantiate.cmake`). Paths below under `utils/`, `configs/` are in `framework/`; `cmake/`, `projects/` are project paths.
+Repo: `framework/` (the px CMake code), `template/` (bare project skeleton; `find_package(px 0.1 CONFIG PATHS ${PX_DIR})`, default `../framework`), `tests/` (ctest driver + `fixtures/`: setup projects, and `full_project_*` = projects/ + tests/ laid over a copy of the template by `tests/instantiate.cmake`). Paths below under `utils/`, `configs/` are in `framework/`; `cmake/`, `projects/` are project paths.
 
 ## Map
 - `post_project()` (`framework/base.cmake`): options, toolchain, deps (the project's optional `cmake/deps.cmake`, `utils/importer.cmake`), defaults, warnings, sanitizers.
@@ -24,7 +24,9 @@ Repo: `framework/` (the px CMake code), `template/` (bare project skeleton; find
 - `.build/active_preset` (written at configure): line 1 preset, line 2 build dir. `just run` reads `<build>/exe/<name>`.
 - ccache, mold, PIC, output dirs reach deps; visibility, warnings, LTO, C++ standard are own targets only.
 - Changing a dep's URL/`TAG`/`PATCH` re-fetches it; local edits in `.deps/<id>-src` block the re-fetch, and the error prints how to save them as a patch.
-- As a subproject: tests, install rules, `compile_commands`, `active_preset` are top-level only. Nested px projects share deps (first import wins); the last-loaded px copy's CMake functions win.
+- As a subproject: tests, install rules, `compile_commands`, `active_preset` are top-level only. Nested px projects share deps (first import wins) and px itself: the cached `px_DIR` from the parent's `find_package(px)` wins over the child's `PATHS`, and the child's version request is checked against it.
+- px version: `framework/version.cmake` (`PX_VERSION`), checked by `pxConfigVersion.cmake`: same major and >= requested; in 0.x also the same minor. Bump the minor for breaking changes while 0.x.
+- Customization never edits `framework/`: README "Customizing" (options, vars before/after `post_project()`, `PX_EXTRA_WARNINGS`, `target_*` after `make_*`).
 - Install bundles only the deps installed targets need (interface deps; SHARED deps for runtime), via the dep's own install rules (from its build dir: patches kept) or, for `INSTALL_HEADERS`/target-less deps, px-installed headers. `pxConfig.cmake` finds them with the built version as floor. A SHARED lib's `PRIVATE_DEPS` stay out. A dep without usable install rules fails at generate ("not in any export set"): see `import_dependency` docs.
 - `just install` (`--target install`): into the preset's `installDir`, `.install/<preset>/`; plain `cmake` without presets keeps CMake's default prefix.
 - `just package` (`--target package`/`package_source`): CPack TGZ (ZIP on Windows) of the install tree into `<build>/packages/`; `cpack -G <gen>` for others. Installed exes find px shared libs via relative RPATH (`$ORIGIN/../lib`).

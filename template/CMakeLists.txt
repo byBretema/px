@@ -4,7 +4,7 @@ set(PX_DIR "$ENV{PX_DIR}" CACHE PATH "px framework directory")
 if(NOT PX_DIR)
   set(PX_DIR "${CMAKE_CURRENT_LIST_DIR}/../framework" CACHE PATH "" FORCE)
 endif()
-include(${PX_DIR}/base.cmake)
+find_package(px 0.1 REQUIRED CONFIG PATHS "${PX_DIR}" NO_DEFAULT_PATH)
 
 pre_project()
 project(myproj VERSION 0.1.0 DESCRIPTION "")

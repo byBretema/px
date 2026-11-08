@@ -2,6 +2,7 @@
 
 include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/utils/logger.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/version.cmake)
 
 # Not cache: a nested px project needs its own.
 set(__base_dir ${CMAKE_CURRENT_LIST_DIR})
@@ -45,6 +46,7 @@ macro(post_project)
   endif()
 
   log_ln()
+  log_status("px      -> ${PX_VERSION} (${__base_dir})")
   log_status("Project -> ${PROJECT_NAME}")
 
   if(__multi_config)

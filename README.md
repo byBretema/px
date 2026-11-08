@@ -22,16 +22,21 @@ To start a project, copy `template/`, rename the project in its
 `CMakeLists.txt`, and add targets. `tests/fixtures/full_project_01` is a
 worked example: its `projects/` and `tests/` laid over the template.
 
-The template finds px through `PX_DIR` (cache variable, or the `PX_DIR`
-environment variable for both CMake and `just`), by default `../framework`,
-so a copy beside `framework/` works as is. Fetching px by version is planned.
+The template loads px with `find_package(px 0.1 ...)` from `PX_DIR` (cache
+variable, or the `PX_DIR` environment variable for both CMake and `just`), by
+default `../framework`, so a copy beside `framework/` works as is. Fetching px
+by version is planned.
+
+px is versioned (`framework/version.cmake`). A request for `0.1` accepts any
+`0.1.x`; from 1.0 on, any newer version of the same major. In 0.x a minor
+release may break projects.
 
 Commands below run from the project directory (`template/`).
 
 ## Requirements
 
-- CMake 3.28+, Ninja, git, and a C++23 compiler. Deps may need newer ones
-  (the bundled glaze needs GCC 13+, Clang 18+ or MSVC 19.50+).
+- CMake 3.28+, Ninja, git, and a C++23 compiler. Some deps need newer ones
+  (glaze: GCC 13+, Clang 18+ or MSVC 19.50+), declared with `COMPILERS`.
 - Optional: [just](https://github.com/casey/just) (shortcuts below), ccache,
   mold, clang-format.
 
@@ -202,12 +207,31 @@ Options, settable with `-D` or in a preset:
 | `PX_USE_CCACHE`, `PX_USE_MOLD`, `PX_USE_COMPILE_COMMANDS` | `ON` | Used when found. |
 | `PX_ENABLE_ASAN`, `PX_ENABLE_UBSAN` | `OFF` | Set by the sanitizer presets. |
 | `PX_FORCE_ERROR` | `OFF` | Warnings as errors; set by `-strict` presets. |
+| `PX_USE_LTO` | `ON` | LTO in Release and RelWithDebInfo, when supported. |
 | `PX_DEPS_DIR` | `.deps/` | Where dependency sources live (or `$PX_DEPS_DIR`). |
 | `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. |
 | `PX_DIR` | `../framework` | Where px is (or `$PX_DIR`). |
 
 `compile_commands.json` is copied to the repo root on every build, so clangd
 works with no setup.
+
+## Customizing
+
+Everything is set from your project, never by editing px:
+
+- The options above: `-D`, or a preset's `cacheVariables`.
+- In the root `CMakeLists.txt`, before `post_project()`:
+  - `PX_CXX_STANDARD` (default 23);
+  - output dirs (`CMAKE_RUNTIME_OUTPUT_DIRECTORY` and the like) and
+    `CMAKE_INSTALL_RPATH`: px only sets them when you haven't.
+- `PX_EXTRA_WARNINGS`: flags added after px's warnings on every target made
+  after it is set, so they can also turn one off (`-Wno-shadow`). Set it in
+  the root, or in one target's `CMakeLists.txt` before its `make_*`.
+- `CPACK_*` (`CPACK_GENERATOR`, ...): anywhere before `setup_export()`.
+- After `post_project()`, any variable px sets for your targets can be set
+  again (`set(CMAKE_CXX_VISIBILITY_PRESET default)`).
+- After a `make_*`, plain `target_*` calls on it. The real target name is
+  `<project>_<name>` for libs (`myproj_util`), or the name for exes and tests.
 
 ## Install and package
 
@@ -255,8 +279,10 @@ Installed executables find px shared libraries next to them
   no tests, install rules or `compile_commands.json`; those belong to the
   top-level project.
 - **px inside px**: deps are shared, and the first import of a dependency
-  wins, so both projects use the same copy. The child's executables are
-  prefixed with its project name (`child_app`) so names don't collide.
+  wins, so both projects use the same copy. px itself is loaded once too:
+  the child's `find_package(px)` gets the parent's px, and configure stops if
+  it isn't a version the child accepts. The child's executables are prefixed
+  with its project name (`child_app`) so names don't collide.
 
 ## Formatting
 

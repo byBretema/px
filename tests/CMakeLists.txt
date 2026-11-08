@@ -52,6 +52,14 @@ set_tests_properties(conflict PROPERTIES
   FIXTURES_REQUIRED lib_installed
   PASS_REGULAR_EXPRESSION "lib was built with fmt 11\\.1\\.4, but fmt 10\\.0\\.0 is already loaded")
 
+# px versions find_package must reject: another major, and in 0.x another minor.
+foreach(request 1.0 0.0)
+  add_test(NAME px_version_${request}
+    COMMAND ${CMAKE_COMMAND} --fresh -S "${fixtures}/px_version" -B px_version_${request} -D REQUEST=${request})
+  set_tests_properties(px_version_${request} PROPERTIES
+    PASS_REGULAR_EXPRESSION "compatible[ \n]+with requested version \"${request}\"")
+endforeach()
+
 # The template plus the fixture's projects/ and tests/, built with the
 # template's presets: <name>_{copy,configure,build,test,format}. Deps go to the
 # copy's own .deps: the same dep patched differently in a shared deps dir would

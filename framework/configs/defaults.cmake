@@ -9,7 +9,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 # No CMAKE_DEBUG_POSTFIX: deps build as PX_DEPS_BUILD_TYPE, so names would mismatch.
 
 # Per-config vars: multi-config generators keep Debug without LTO.
-if(__multi_config OR CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$")
+if(PX_USE_LTO AND (__multi_config OR CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$"))
   include(CheckIPOSupported)
   check_ipo_supported(RESULT __ipo_supported OUTPUT __ipo_error)
   if(__ipo_supported)

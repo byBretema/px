@@ -1,4 +1,6 @@
-# Warnings of own targets (PX_FORCE_ERROR: as errors).
+# Warnings of own targets (PX_FORCE_ERROR: as errors). PX_EXTRA_WARNINGS,
+# read when each target is made, go last, so they can also turn px's off
+# (-Wno-shadow).
 
 function(setup_warnings project_name)
 
@@ -72,5 +74,6 @@ function(setup_warnings project_name)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${project_name} PRIVATE ${COMMON_WARNINGS} ${GCC_WARNINGS})
   endif()
+  target_compile_options(${project_name} PRIVATE ${PX_EXTRA_WARNINGS})
 
 endfunction()

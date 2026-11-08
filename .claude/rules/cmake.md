@@ -10,7 +10,7 @@ paths:
 - `cmake_minimum_required(VERSION 3.28)`, presets version `8`. Newer features (`CMAKE_LINKER_TYPE`, `CMAKE_MSVC_RUNTIME_CHECKS`) get minimal workarounds.
 - `function()` by default; `macro()` only when the caller's scope must change (`pre_project`, `post_project`, `setup_testing`, logger).
 - Internal functions/vars: `__` prefix (`__glob_sources`, `__base_dir`). Locals: `snake_case`. Out vars via `PARENT_SCOPE`.
-- Options and user-facing cache vars: `PX_` prefix (global cache, must not clash with a parent project's). `PX_USE_*` tooling, `PX_ENABLE_*` sanitizers, `PX_FORCE_*` behaviour.
+- Options and user-facing cache vars: `PX_` prefix (global cache, must not clash with a parent project's). `PX_USE_*` tooling, `PX_ENABLE_*` sanitizers, `PX_FORCE_*` behaviour. Framework defaults a project may override are only set `if(NOT DEFINED ...)`/`if(NOT <var>)`.
 - `include_guard(DIRECTORY)` in every `framework/` module; `GNUInstallDirs` for install paths.
 
 ## Targets
