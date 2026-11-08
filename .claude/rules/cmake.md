@@ -20,6 +20,7 @@ paths:
 - Standard: `PX_CXX_STANDARD` (project, default 23) as a `cxx_std_<n>` compile feature (`PUBLIC` on libs); `CMAKE_CXX_STANDARD` can only raise it. Dep version floors: `import_dependency(... COMPILERS GNU=13 ...)`, not central. Visibility hidden, PIC on, LTO on Release/RelWithDebInfo when supported.
 - Warning flags `PRIVATE`, never leaked to consumers.
 - Deps per target (`DEPS`, `PRIVATE_DEPS`), through the px wrapper `__px_dep_<ns>_<target>` (SUBDIR include, DEFINES; exportable). No catch-all dep target.
+- Compiled libs: `generate_export_header` per lib (`<name>_export.hpp` in a FILE_SET base dir under the binary dir, `<NAME>_API`; STATIC gets `<NAME>_STATIC_DEFINE` PUBLIC, so the macro is empty).
 - SHARED libs hide static deps' symbols: `--exclude-libs,ALL`; macOS `-load_hidden` per archive (deferred, walks the link closure).
 
 ## Dependencies

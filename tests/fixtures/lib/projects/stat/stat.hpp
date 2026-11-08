@@ -1,6 +1,8 @@
 #pragma once
+#include "stat_export.hpp"
+
 #include <string>
 
 namespace st {
-std::string make(int x);
+STAT_API std::string make(int x);
 }

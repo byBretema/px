@@ -33,6 +33,9 @@ function(make_lib name kind)
   __make_target(${target} ${kind} ${ARGN})
   add_library(${PROJECT_NAME}::${name} ALIAS ${target})
   set_target_properties(${target} PROPERTIES EXPORT_NAME ${name})
+  if(NOT kind STREQUAL "HEADER_ONLY")
+    __export_header(${target} ${name} ${kind})
+  endif()
   __register_export(${target})
 endfunction()
 
@@ -116,6 +119,21 @@ function(__link_deps target scope)
     endif()
     target_link_libraries(${target} ${scope} ${dep})
   endforeach()
+endfunction()
+
+
+# <NAME>_API from <name>_export.hpp marks what a lib exports: symbols are
+# hidden by default, and MSVC DLLs export nothing unmarked. Empty for STATIC.
+function(__export_header target name kind)
+  include(GenerateExportHeader)
+  string(TOUPPER "${name}" upper)
+  set(dir "${CMAKE_CURRENT_BINARY_DIR}/px_export")
+  set(file "${dir}/${name}_export.hpp")
+  generate_export_header(${target} BASE_NAME ${upper} EXPORT_MACRO_NAME ${upper}_API EXPORT_FILE_NAME "${file}")
+  target_sources(${target} PUBLIC FILE_SET HEADERS BASE_DIRS "${dir}" FILES "${file}")
+  if(kind STREQUAL "STATIC")
+    target_compile_definitions(${target} PUBLIC ${upper}_STATIC_DEFINE)
+  endif()
 endfunction()
 
 

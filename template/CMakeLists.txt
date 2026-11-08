@@ -7,7 +7,7 @@ endif()
 include(${PX_DIR}/base.cmake)
 
 pre_project()
-project("px"  VERSION "0.0.1"  DESCRIPTION "A cpp project start point: CMake wrapper to manage deps and opinionated sane-defaults")
+project(myproj VERSION 0.1.0 DESCRIPTION "")
 post_project()
 
 log_header("Sub Projects")

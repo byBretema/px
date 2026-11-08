@@ -11,7 +11,7 @@ Repo: `framework/` (the px CMake code), `template/` (bare project skeleton; find
 
 ## Common changes
 - Dep: one `import_dependency()` block in `cmake/deps.cmake`. System-only libs (Qt, Boost): plain `find_package()` there, plus `setup_export(DEPS <pkg>)` if installed targets need them.
-- Target: `just add_exe|add_lib <name> [SHARED|STATIC|HEADER_ONLY]`. Targets link only what they list: `make_*(<name> ... DEPS <targets>)`, compiled libs also `PRIVATE_DEPS`. Link libs as `<PROJECT_NAME>::<name>` (`px::core`), never by plain name.
+- Target: `just add_exe|add_lib <name> [SHARED|STATIC|HEADER_ONLY]`. Targets link only what they list: `make_*(<name> ... DEPS <targets>)`, compiled libs also `PRIVATE_DEPS`. Link libs as `<PROJECT_NAME>::<name>` (`myproj::core`), never by plain name. Compiled libs export only symbols marked `<NAME>_API` (generated `<name>_export.hpp`; empty for STATIC).
 
 ## Verify
 - `just [preset=<preset>] test [<fixture>...]` (root justfile; = `cmake -S tests -B .build/tests -D PX_TEST_PRESET=<preset> && ctest --test-dir .build/tests -j 4`), with `debug-strict` and `debug-sanitizers` (plain parent, nested px, install, `find_package` consumer, dep version conflict, full projects with the template's presets and format check). CI runs `debug-sanitizers-strict` (Ubuntu 24.04, GCC + Clang).

@@ -119,6 +119,11 @@ make_test(test_util DEPS myproj::util)
 - A target sees only what it lists: no dep reaches a target by accident.
 - Link your own libraries as `<project>::<name>` (`myproj::util`), never by
   plain name.
+- A compiled library exports only what is marked with `<NAME>_API`, from the
+  generated `<name>_export.hpp` (`UTIL_API int add(int, int);`). Symbols are
+  hidden by default, and an unmarked function of a SHARED lib can't be linked
+  by its users. In a STATIC lib the macro is empty, so switching the type
+  needs no code change. `just add_lib` writes the include for you.
 - A library's directory is its include root: `projects/util/geo/vec.hpp` is
   included as `#include "geo/vec.hpp"` and installed as
   `include/myproj/util/geo/vec.hpp`.
@@ -168,6 +173,10 @@ How sources are handled:
 
 - Sources are fetched once into `.deps/` and shared by every build directory.
   They are fetched again only when the URL, `TAG` or patch changes.
+- So one deps dir holds one version of each dep. Projects sharing a deps dir
+  (`PX_DEPS_DIR`) must agree on each shared dep's URL, `TAG` and patch: if
+  they differ, each configure re-fetches it over the other's. Give such
+  projects separate deps dirs.
 - Editing a dep in `.deps/<id>-src` to debug it is fine. If a re-fetch would
   throw your edits away, configure stops and prints the commands to save them
   as a patch.

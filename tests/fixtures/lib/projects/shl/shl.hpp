@@ -1,6 +1,8 @@
 #pragma once
+#include "shl_export.hpp"
+
 #include <string>
 
 namespace shl {
-[[gnu::visibility("default")]] std::string make(int x);
+SHL_API std::string make(int x);
 }
