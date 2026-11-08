@@ -31,7 +31,8 @@ jobs:
 
       # The version pinned in .clang-format: other versions format differently.
       - name: Install clang-format
-        run: pipx install "clang-format==$(sed -n 's/^# clang-format-version: *\([0-9.]*\).*/\1/p' .clang-format).*"
+        run: |
+          pipx install "clang-format==$(sed -n 's/^# clang-format-version: *\([0-9.]*\).*/\1/p' .clang-format).*"
 
       - name: Check
         run: cmake -D CHECK=ON -P cmake/utils/format.cmake
