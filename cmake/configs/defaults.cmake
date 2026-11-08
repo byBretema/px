@@ -1,49 +1,31 @@
-#-------------------------------------------------------------------------------
-# Setup some sane defaults
-#-------------------------------------------------------------------------------
+# Defaults for own targets (included after deps).
 
-# C++ standard: __cxx_std from compiler.cmake (PX_CXX_STANDARD)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Symbol visibility (smaller/faster binaries)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-# NOTE: CMAKE_DEBUG_POSTFIX is intentionally omitted. It conflicts with
-# DEPS_BUILD_TYPE forcing different build types per dependency — in single-config
-# generators the consuming target resolves library paths using the global
-# CMAKE_BUILD_TYPE + CMAKE_DEBUG_POSTFIX, producing mismatched filenames when
-# deps are built as Release while the project is Debug.
+# No CMAKE_DEBUG_POSTFIX: deps build as DEPS_BUILD_TYPE, so names would mismatch.
 
-# LTO on optimized builds. Per-config variables, so multi-config generators
-# don't get LTO in Debug.
+# Per-config vars: multi-config generators keep Debug without LTO.
 if(__multi_config OR CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$")
   include(CheckIPOSupported)
-  check_ipo_supported(RESULT _ipo_supported OUTPUT _ipo_error)
-  if(_ipo_supported)
+  check_ipo_supported(RESULT __ipo_supported OUTPUT __ipo_error)
+  if(__ipo_supported)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
   else()
-    message(WARNING "IPO/LTO requested but not supported: ${_ipo_error}")
+    message(WARNING "IPO/LTO requested but not supported: ${__ipo_error}")
   endif()
 endif()
 
-# No C++20 module scanning: px uses no modules, and scanning costs a
-# dependency pass per source.
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
-# One TU per public header (`all_verify_interface_header_sets` target): checks
-# headers are self-contained, and gives header-only libs compile_commands
-# entries, so clangd parses them with the lib's flags (C++23), not guessed ones.
+# Also gives header-only libs compile_commands entries (clangd flags).
 set(CMAKE_VERIFY_INTERFACE_HEADER_SETS ON)
 
-# Includes
-include(GNUInstallDirs)
-
-# Relocatable installs (packages): installed exes find px shared libs relative
-# to themselves, not through the build tree's absolute RPATH (stripped on
-# install). Windows needs none: DLLs install next to exes (bin/).
+# Relocatable installs. Windows needs none: DLLs install next to exes.
 if(NOT DEFINED CMAKE_INSTALL_RPATH)
   if(APPLE)
     set(__origin "@loader_path")

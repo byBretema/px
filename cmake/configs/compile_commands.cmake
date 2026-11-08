@@ -1,15 +1,11 @@
-#-------------------------------------------------------------------------------
-# Compile Commands
-#-------------------------------------------------------------------------------
+# compile_commands.json, copied to the source root.
 
 if(USE_COMPILE_COMMANDS)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
-# The database is written at generate time, after configure ends, so it is
-# copied to the source root by a build step instead of at configure time.
-# The stamp is the tracked output: CMAKE_DISABLE_SOURCE_CHANGES forbids
-# custom command outputs in the source tree.
+# A build step: the file is written at generate time, after configure. The
+# stamp is the output, as CMAKE_DISABLE_SOURCE_CHANGES forbids outputs in the source tree.
 if(CMAKE_EXPORT_COMPILE_COMMANDS AND CMAKE_GENERATOR MATCHES "Ninja|Makefiles" AND PROJECT_IS_TOP_LEVEL)
   set(__cc_src "${CMAKE_BINARY_DIR}/compile_commands.json")
   set(__cc_stamp "${CMAKE_BINARY_DIR}/compile_commands.stamp")

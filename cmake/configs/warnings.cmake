@@ -1,19 +1,15 @@
-#-------------------------------------------------------------------------------
-# Warnings
-#-------------------------------------------------------------------------------
+# Warnings of own targets (FORCE_ERROR: as errors).
 
 function(setup_warnings project_name)
 
-  # MSVC — compiler conformance flags
-  #        (not warnings, but required for correct modern C++ behaviour on MSVC)
+  # Conformance, not warnings.
 
   set(MSVC_OPTIONS
     /Zc:preprocessor  # standard-conforming preprocessor
     /utf-8            # source + execution character set = UTF-8
   )
 
-  # MSVC — warning flags (each /wNNNN enables a warning that is
-  #        off-by-default at /W4; /weNNNN makes it an error).
+  # /w1NNNN: enables an off-by-default warning; /weNNNN: as error.
 
   set(MSVC_WARNINGS
     /W4               # warning level 4 (reasonable maximum)
@@ -40,8 +36,6 @@ function(setup_warnings project_name)
     /w14928           # C4928 — illegal copy-initialisation; more than one implicit conversion
   )
 
-  # Clang and GCC shared flags
-
   set(COMMON_WARNINGS
     -Wall
     -Wextra
@@ -55,20 +49,11 @@ function(setup_warnings project_name)
     -Wundef
     -Wdouble-promotion
     -Wimplicit-fallthrough
-    # C++ only: GCC rejects these for C sources ("valid for C++ but not for C")
+    # GCC rejects these for C sources.
     $<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor;-Wold-style-cast;-Woverloaded-virtual>
   )
 
-  # Clang only
-
-  set(CLANG_WARNINGS
-    ${COMMON_WARNINGS}
-  )
-
-  # GCC only
-
   set(GCC_WARNINGS
-    ${COMMON_WARNINGS}
     -Wmisleading-indentation
     -Wduplicated-cond
     -Wduplicated-branches
@@ -76,20 +61,16 @@ function(setup_warnings project_name)
     $<$<COMPILE_LANGUAGE:CXX>:-Wuseless-cast>
   )
 
-  # Enable compiling warnings as errors by default (based on exposed option)
-
   if(FORCE_ERROR)
     set_target_properties(${project_name} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
   endif()
 
-  # Set the flags
-
   if(MSVC)
     target_compile_options(${project_name} PRIVATE ${MSVC_OPTIONS} ${MSVC_WARNINGS})
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${project_name} PRIVATE ${CLANG_WARNINGS})
+    target_compile_options(${project_name} PRIVATE ${COMMON_WARNINGS})
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${project_name} PRIVATE ${GCC_WARNINGS})
+    target_compile_options(${project_name} PRIVATE ${COMMON_WARNINGS} ${GCC_WARNINGS})
   endif()
 
 endfunction()

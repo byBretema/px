@@ -1,8 +1,5 @@
-#-------------------------------------------------------------------------------
-# New target: scaffolds projects/<NAME> and registers it in projects/CMakeLists.txt
-#
-#   cmake -D NAME=<name> -D TYPE=<EXE|SHARED|STATIC> -P cmake/utils/new_target.cmake
-#-------------------------------------------------------------------------------
+# cmake -D NAME=<name> -D TYPE=<EXE|SHARED|STATIC|HEADER_ONLY> -P cmake/utils/new_target.cmake
+# Scaffolds projects/<NAME> and adds it to projects/CMakeLists.txt.
 
 cmake_minimum_required(VERSION 3.28)
 
@@ -12,12 +9,12 @@ cmake_path(GET cmake_dir PARENT_PATH root)
 set(projects "${root}/projects")
 set(dir "${projects}/${NAME}")
 
-# The name is also a C++ namespace (libs), so it must be an identifier.
+# Also the libs' C++ namespace.
 if(NOT NAME MATCHES "^[A-Za-z_][A-Za-z0-9_]*$")
   message(FATAL_ERROR "invalid name: '${NAME}' (use [A-Za-z_][A-Za-z0-9_]*)")
 endif()
-if(NOT TYPE MATCHES "^(EXE|SHARED|STATIC)$")
-  message(FATAL_ERROR "invalid type: '${TYPE}' (use EXE, SHARED or STATIC)")
+if(NOT TYPE MATCHES "^(EXE|SHARED|STATIC|HEADER_ONLY)$")
+  message(FATAL_ERROR "invalid type: '${TYPE}' (use EXE, SHARED, STATIC or HEADER_ONLY)")
 endif()
 if(EXISTS "${dir}")
   message(FATAL_ERROR "already exists: ${dir}")
@@ -29,7 +26,9 @@ if(TYPE STREQUAL "EXE")
 else()
   file(WRITE "${dir}/CMakeLists.txt" "make_lib(${NAME} ${TYPE})\n")
   file(WRITE "${dir}/${NAME}.hpp" "#pragma once\n\nnamespace ${NAME} {\n}\n")
-  file(WRITE "${dir}/${NAME}.cpp" "#include \"${NAME}.hpp\"\n")
+  if(NOT TYPE STREQUAL "HEADER_ONLY")
+    file(WRITE "${dir}/${NAME}.cpp" "#include \"${NAME}.hpp\"\n")
+  endif()
 endif()
 
 set(list_file "${projects}/CMakeLists.txt")
@@ -40,7 +39,6 @@ if(EXISTS "${list_file}")
 endif()
 string(REGEX MATCH "(^|\n)add_subdirectory\\(${NAME}\\)(\n|$)" found "${content}")
 if(NOT found)
-  # Keep the entry on its own line when the file lacks a trailing newline.
   if(content AND NOT content MATCHES "\n$")
     set(entry "\n${entry}")
   endif()
@@ -48,4 +46,5 @@ if(NOT found)
 endif()
 
 string(TOLOWER "${TYPE}" kind)
+string(REPLACE "_" "-" kind "${kind}")
 message(STATUS "created ${kind}: ${NAME} (projects/${NAME})")

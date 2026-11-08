@@ -11,7 +11,7 @@ import_dependency(fmt::fmt
   GITHUB    fmtlib/fmt
   TAG       11.1.4
   SUBDIR    include
-  OPTIONS   FMT_INSTALL=OFF
+  OPTIONS   FMT_INSTALL=ON
             FMT_TEST=OFF
             FMT_DOC=OFF
             FMT_DEBUG_POSTFIX=
@@ -59,7 +59,7 @@ import_dependency(glaze::glaze
   # README: CI covers GCC 13+, Clang 18+, latest MSVC and Apple Clang only.
   COMPILERS GNU=13 Clang=18 AppleClang=17 MSVC=19.50
   OPTIONS   glaze_BUILD_TEST=OFF
-            glaze_INSTALL=OFF
+            glaze_INSTALL=ON
 )
 
 #-------------------------------------------------------------------------------
@@ -69,6 +69,7 @@ import_dependency(utfcpp::utfcpp
   GITHUB    nemtrif/utfcpp
   TAG       v4.0.6
   SUBDIR    source
+  PACKAGE   utf8cpp
   PATCH     ${CMAKE_CURRENT_LIST_DIR}/patches/utfcpp.cmake
 )
 
@@ -80,6 +81,7 @@ import_dependency(argparse::argparse
   TAG       v3.2
   SUBDIR    include
   PATCH     ${CMAKE_CURRENT_LIST_DIR}/patches/argparse.patch
+  OPTIONS   ARGPARSE_INSTALL=ON
 )
 
 #-------------------------------------------------------------------------------
@@ -90,7 +92,7 @@ import_dependency(glm::glm
   TAG       1.0.1
   SUBDIR    .
   OPTIONS   GLM_TEST_ENABLE=OFF
-            GLM_INSTALL_ENABLE=OFF
+            GLM_BUILD_INSTALL=ON
 )
 
 #-------------------------------------------------------------------------------
@@ -109,6 +111,7 @@ import_dependency(fu2::function
   GITHUB    Naios/function2
   TAG       4.2.2
   SUBDIR    include
+  INSTALL_HEADERS
 )
 
 #-------------------------------------------------------------------------------
@@ -142,6 +145,7 @@ import_dependency(phmap::phmap
   GITHUB    greg7mdp/parallel-hashmap
   TAG       v2.0.0
   SUBDIR    .
+  INSTALL_HEADERS
 )
 
 #-------------------------------------------------------------------------------
@@ -155,6 +159,7 @@ import_dependency(EnTT::EnTT
             ENTT_BUILD_BENCHMARK=OFF
             ENTT_BUILD_DOCS=OFF
             ENTT_BUILD_EXAMPLE=OFF
+            ENTT_INSTALL=ON
 )
 
 #-------------------------------------------------------------------------------
@@ -184,6 +189,5 @@ import_dependency(EASTL::EASTL
 
 log_ln()
 log_status("All dependencies fetched and configured.")
-log_status("Interface target: 'all_dependencies'")
 
 

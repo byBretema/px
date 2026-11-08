@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The version pinned in format.cmake: other versions format differently.
+      # The version pinned in .clang-format: other versions format differently.
       - name: Install clang-format
         run: pipx install "clang-format==$(sed -n 's/^# clang-format-version: *\([0-9.]*\).*/\1/p' .clang-format).*"
 

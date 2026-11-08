@@ -1,2 +1,1 @@
-make_test(test_core)
-target_link_libraries(test_core PRIVATE px::core)
+make_test(test_core DEPS px::core)

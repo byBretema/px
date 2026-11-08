@@ -1,12 +1,11 @@
-#-------------------------------------------------------------------------------
-# Global: settings that must also reach dependencies (included before deps)
-#-------------------------------------------------------------------------------
+# Settings that also reach deps (included before them).
 
-# Static libraries (deps included) are PIC, linkable into shared ones
+include(GNUInstallDirs)
+
+# Static deps linkable into shared libs.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Organized output dirs; dep DLLs land next to executables on Windows.
-# A parent project's choice (px used as a subproject) wins.
+# DLLs next to exes on Windows. A parent project's choice wins.
 if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")

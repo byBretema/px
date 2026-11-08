@@ -1,11 +1,5 @@
-#-------------------------------------------------------------------------------
-# Compiler: C++ standard of own targets, checked at configure
-#-------------------------------------------------------------------------------
-
-# Project's choice: set(PX_CXX_STANDARD <n>) before post_project().
-# A compile feature on every own target (make_*), so installed libs carry it to
-# consumers; deps keep their own. CMAKE_CXX_STANDARD can raise it, not lower it.
-# Version floors of deps: import_dependency(... COMPILERS ...).
+# C++ standard of own targets: set(PX_CXX_STANDARD <n>) before post_project().
+# A compile feature, so installed libs carry it to consumers.
 if(NOT DEFINED PX_CXX_STANDARD)
   set(PX_CXX_STANDARD 23)
 endif()

@@ -1,13 +1,9 @@
-#-------------------------------------------------------------------------------
-# EntryPoint
-#-------------------------------------------------------------------------------
-
+# px entry point: pre_project() / post_project() around project().
 
 include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/utils/logger.cmake)
 
-# Normal var, not cache: a px project used as a subproject of another px
-# project must resolve its own cmake/ dir (subdirs inherit it).
+# Not cache: a nested px project needs its own.
 set(__base_dir ${CMAKE_CURRENT_LIST_DIR})
 
 
@@ -21,9 +17,7 @@ macro(pre_project)
 
   set(__pre_project_done ON)
 
-  # Set by CMakePresets.json. Lets tools (justfile) reuse the last configured
-  # preset and find its build dir: line 1 = preset, line 2 = binary dir.
-  # project() has not run yet, so PROJECT_IS_TOP_LEVEL is not usable here.
+  # For the justfile. Before project(): PROJECT_IS_TOP_LEVEL isn't set yet.
   if(ACTIVE_PRESET AND CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     file(WRITE "${CMAKE_SOURCE_DIR}/.build/active_preset" "${ACTIVE_PRESET}\n${CMAKE_BINARY_DIR}\n")
   endif()
@@ -40,14 +34,11 @@ macro(post_project)
   endif()
   unset(__pre_project_done)
 
-  # Inherited from a parent px project (px used as a subproject): it would
-  # block the ccache dir and dep writes below. Set again at the end.
+  # Inherited from a parent px project; would block dep fetches. Set again at the end.
   unset(CMAKE_DISABLE_SOURCE_CHANGES)
 
   include(${__base_dir}/utils/scaffolding.cmake)
 
-  # Multi-config generators (VS, Xcode, Ninja Multi-Config) ignore
-  # CMAKE_BUILD_TYPE: the config is picked at build time (--config).
   get_property(__multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(NOT __multi_config AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
@@ -68,7 +59,7 @@ macro(post_project)
     log_status("Preset  -> none (${__build_type})")
   endif()
 
-  # Toolchain: must precede deps so they inherit it
+  # Before deps, so they inherit it.
   log_header("Toolchain")
 
   log_status("Compiler for C++ -> ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
@@ -83,20 +74,16 @@ macro(post_project)
   include(${__base_dir}/configs/linker.cmake)
   include(${__base_dir}/configs/global.cmake)
 
-  # Deps
   log_header("Dependencies")
 
   include(${__base_dir}/deps.cmake)
 
-  # Project setup: own targets only
-  # log_header("Setup")
-
+  # After deps: own targets only.
   include(${__base_dir}/configs/defaults.cmake)
   include(${__base_dir}/configs/warnings.cmake)
   include(${__base_dir}/configs/sanitizers.cmake)
 
-  # Generated files must go to the build dir: in a globbed project dir they
-  # would be compiled. Set last, so the deps/active_preset writes above pass.
+  # Generated files in a globbed target dir would be compiled.
   set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 
 endmacro()

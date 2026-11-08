@@ -1,6 +1,4 @@
-#-------------------------------------------------------------------------------
-# Cache: ccache, for building codebase cache
-#-------------------------------------------------------------------------------
+# ccache (USE_CCACHE).
 
 if(USE_CCACHE)
   find_program(__ccache_found ccache)
@@ -11,8 +9,7 @@ if(USE_CCACHE)
     endif()
     log_status("ccache: enabled (${__ccache_found}, cache_dir=${__ccache_dir})")
     file(MAKE_DIRECTORY "${__ccache_dir}")
-    # cache_dir on the command line: ENV{} set here would not survive into
-    # the build (ninja runs ccache with the shell's environment).
+    # On the command line: ENV{} set here doesn't reach the build.
     set(CMAKE_CXX_COMPILER_LAUNCHER "${__ccache_found}" "cache_dir=${__ccache_dir}")
     set(CMAKE_C_COMPILER_LAUNCHER "${__ccache_found}" "cache_dir=${__ccache_dir}")
   else()

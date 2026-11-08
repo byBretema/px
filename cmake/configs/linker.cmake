@@ -1,10 +1,5 @@
-#-------------------------------------------------------------------------------
-# Linker: mold, replacement for ld/gold/lld (ELF only)
-#-------------------------------------------------------------------------------
-
-# Probed rather than assumed: GCC < 12.1 rejects -fuse-ld=mold, and mold
-# cannot link Mach-O/PE (the probe fails there). CMAKE_LINKER_TYPE (3.29+)
-# would replace this.
+# mold (USE_MOLD). Probed: GCC < 12.1 rejects -fuse-ld=mold, and mold can't
+# link Mach-O/PE. CMAKE_LINKER_TYPE (3.29+) would replace this.
 if(USE_MOLD AND NOT MSVC)
   find_program(__mold_found mold)
   if(__mold_found)

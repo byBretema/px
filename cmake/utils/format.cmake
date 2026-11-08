@@ -1,16 +1,9 @@
-#-------------------------------------------------------------------------------
-# Format: runs clang-format over own sources (projects/, tests/)
+# cmake [-D CHECK=ON] [-D CLANG_FORMAT=<bin>] -P cmake/utils/format.cmake
+# clang-format over projects/ and tests/; CHECK fails on unformatted files.
 #
-#   cmake -P cmake/utils/format.cmake              format in place
-#   cmake -D CHECK=ON -P cmake/utils/format.cmake  fail on unformatted files (CI)
-#
-# CLANG_FORMAT (-D or env): clang-format binary to use instead of PATH's.
-#
-# Version pin: project-owned, in the root .clang-format as a comment line
-#   # clang-format-version: 21.1.8      (or a prefix: 21, 21.1)
-# Each release formats slightly differently, so a mismatch warns; an older
-# major fails, since it rejects keys it doesn't know. No pin, no checks.
-#-------------------------------------------------------------------------------
+# Pin, optional, in .clang-format: `# clang-format-version: 21.1.8` (or 21,
+# 21.1). Releases format differently, so a mismatch warns; an older major
+# fails, as it rejects newer keys.
 
 cmake_minimum_required(VERSION 3.28)
 
@@ -51,12 +44,9 @@ if(pin)
   endif()
 endif()
 
-# Not vendor/ or deps: third-party code keeps its own style.
-file(GLOB_RECURSE sources
-  "${root}/projects/*.cpp" "${root}/projects/*.cc" "${root}/projects/*.c" "${root}/projects/*.cxx"
-  "${root}/projects/*.hpp" "${root}/projects/*.hh" "${root}/projects/*.h" "${root}/projects/*.hxx"
-  "${root}/tests/*.cpp" "${root}/tests/*.cc" "${root}/tests/*.c" "${root}/tests/*.cxx"
-  "${root}/tests/*.hpp" "${root}/tests/*.hh" "${root}/tests/*.h" "${root}/tests/*.hxx")
+include("${CMAKE_CURRENT_LIST_DIR}/sources.cmake")
+__ext_patterns(patterns "${root}/projects;${root}/tests" ${__source_exts} ${__header_exts})
+file(GLOB_RECURSE sources ${patterns})
 if(NOT sources)
   message(STATUS "nothing to format")
   return()
@@ -64,7 +54,6 @@ endif()
 list(LENGTH sources count)
 
 if(CHECK)
-  # --Werror: unformatted lines are printed as errors and fail the run.
   execute_process(COMMAND "${clang_format}" --dry-run --Werror --style=file ${sources}
     WORKING_DIRECTORY "${root}"
     RESULT_VARIABLE rc)

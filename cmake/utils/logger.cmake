@@ -1,6 +1,4 @@
-#-------------------------------------------------------------------------------
-# Logger
-#-------------------------------------------------------------------------------
+# Logger: log_* macros, PRE_LOG_TAG prefix.
 
 set(PRE_LOG_TAG "" CACHE STRING "Prefix for framework log messages")
 
@@ -33,28 +31,22 @@ macro(log_header)
   log_ln()
   message("[ ${ARGN} ]")
   log_ln()
-  # log_status("│ ${ARGN}")
-  # log_status("└───────────────────────────────────────────────────────────────────────────────")
-endmacro()
-
-macro(log_sep)
-  log_status("────────────────────────────────────────────────────────────────────────────────")
 endmacro()
 
 macro(log_level_to_notice)
   if(DEFINED CMAKE_MESSAGE_LOG_LEVEL)
-    set(saved_log_level "${CMAKE_MESSAGE_LOG_LEVEL}")
+    set(__saved_log_level "${CMAKE_MESSAGE_LOG_LEVEL}")
   else()
-    set(saved_log_level "STATUS")
+    set(__saved_log_level "STATUS")
   endif()
   set(CMAKE_MESSAGE_LOG_LEVEL "NOTICE")
 endmacro()
 
 macro(log_level_restore)
-  if(DEFINED saved_log_level)
-    set(CMAKE_MESSAGE_LOG_LEVEL "${saved_log_level}")
+  if(DEFINED __saved_log_level)
+    set(CMAKE_MESSAGE_LOG_LEVEL "${__saved_log_level}")
   endif()
-  unset(saved_log_level)
+  unset(__saved_log_level)
 endmacro()
 
 

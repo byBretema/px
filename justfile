@@ -169,6 +169,6 @@ format_check:
 add_exe name:
     @cmake -D "NAME={{ name }}" -D TYPE=EXE -P "{{ _root }}/cmake/utils/new_target.cmake"
 
-# SHARED / STATIC
+# SHARED / STATIC / HEADER_ONLY
 add_lib name type="SHARED":
     @cmake -D "NAME={{ name }}" -D "TYPE={{ type }}" -P "{{ _root }}/cmake/utils/new_target.cmake"
