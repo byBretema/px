@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-set(PX_DIR "$ENV{PX_DIR}" CACHE PATH "px framework directory")
-if(NOT PX_DIR)
-  set(PX_DIR "${CMAKE_CURRENT_LIST_DIR}/../framework" CACHE PATH "" FORCE)
-endif()
-find_package(px 0.1 REQUIRED CONFIG PATHS "${PX_DIR}" NO_DEFAULT_PATH)
+include(cmake/px.cmake)
 
 pre_project()
 project(myproj VERSION 0.1.0 DESCRIPTION "")

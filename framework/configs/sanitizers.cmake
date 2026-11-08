@@ -37,7 +37,14 @@ function(setup_sanitizers project_name)
   endif()
 
   target_compile_options(${project_name} PRIVATE -fsanitize=${san_flags} -fno-omit-frame-pointer)
-  target_link_options(${project_name} PRIVATE -fsanitize=${san_flags})
+  # Libs: their objects need the runtime, so whatever links them (a plain
+  # parent's exe, an installed lib's consumer) links it too.
+  get_target_property(type ${project_name} TYPE)
+  set(scope PUBLIC)
+  if(type STREQUAL "EXECUTABLE")
+    set(scope PRIVATE)
+  endif()
+  target_link_options(${project_name} ${scope} -fsanitize=${san_flags})
 
   # Otherwise UBSan only prints, and tests pass.
   if(PX_ENABLE_UBSAN)

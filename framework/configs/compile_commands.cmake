@@ -9,6 +9,10 @@ endif()
 if(CMAKE_EXPORT_COMPILE_COMMANDS AND CMAKE_GENERATOR MATCHES "Ninja|Makefiles" AND PROJECT_IS_TOP_LEVEL)
   set(__cc_src "${CMAKE_BINARY_DIR}/compile_commands.json")
   set(__cc_stamp "${CMAKE_BINARY_DIR}/compile_commands.stamp")
+  # CMake writes none for a project without compiled sources.
+  if(NOT EXISTS "${__cc_src}")
+    file(WRITE "${__cc_src}" "[]\n")
+  endif()
   add_custom_command(OUTPUT "${__cc_stamp}"
     COMMAND ${CMAKE_COMMAND} -E copy "${__cc_src}" "${CMAKE_SOURCE_DIR}/compile_commands.json"
     COMMAND ${CMAKE_COMMAND} -E touch "${__cc_stamp}"

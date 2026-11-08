@@ -22,10 +22,17 @@ To start a project, copy `template/`, rename the project in its
 `CMakeLists.txt`, and add targets. `tests/fixtures/full_project_01` is a
 worked example: its `projects/` and `tests/` laid over the template.
 
-The template loads px with `find_package(px 0.1 ...)` from `PX_DIR` (cache
-variable, or the `PX_DIR` environment variable for both CMake and `just`), by
-default `../framework`, so a copy beside `framework/` works as is. Fetching px
-by version is planned.
+The template loads px through `cmake/px.cmake`, before `project()`, from the
+first of:
+1. `PX_DIR`: a px `framework/` dir (cache variable, or the `PX_DIR`
+   environment variable for both CMake and `just`);
+2. an installed px, found by `find_package(px 0.1)`;
+3. `PX_GIT_TAG` (default `v0.1.0`) of `PX_GIT_REPOSITORY`, fetched once into
+   the deps dir as `px-<tag>`. A fetched copy is never updated, so the tag
+   must not move: change `PX_GIT_TAG` to upgrade.
+
+A copy kept inside this repo needs `PX_DIR=<repo>/framework`, or it fetches
+the tagged px instead of the local one.
 
 px is versioned (`framework/version.cmake`). A request for `0.1` accepts any
 `0.1.x`; from 1.0 on, any newer version of the same major. In 0.x a minor
@@ -69,6 +76,7 @@ ctest --preset debug
 CMakeLists.txt        project name, version, and the px calls (see below)
 justfile              shortcuts
 CMakePresets.json     build presets
+cmake/px.cmake        loads px (see Repository)
 cmake/deps.cmake      the third-party dependencies, one block each
 cmake/patches/        local changes to dependencies
 projects/<name>/      one target per directory: an exe or a lib
@@ -82,7 +90,7 @@ The root `CMakeLists.txt` is all the top-level CMake a project needs:
 
 ```cmake
 cmake_minimum_required(VERSION 3.28)
-include(../framework/base.cmake)
+include(cmake/px.cmake)
 
 pre_project()
 project(myproj VERSION 1.0.0)
@@ -143,7 +151,9 @@ What every target gets without asking:
 - strict warnings (`-Wall -Wextra -Wconversion ...`, `/W4` on MSVC), errors
   with the `*-strict` presets;
 - sanitizers with the `*-asan`, `*-ubsan`, `*-sanitizers` presets;
-- hidden symbol visibility, PIC, and LTO in Release and RelWithDebInfo;
+- hidden symbol visibility, PIC, and LTO in Release and RelWithDebInfo
+  (not for STATIC libs: LTO objects in an installed archive only link with
+  the same compiler's LTO);
 - a SHARED lib keeps the symbols of static deps it links (such as fmt) to
   itself, so they can't clash with a consumer's own copy.
 
@@ -205,12 +215,13 @@ Options, settable with `-D` or in a preset:
 | Option | Default | |
 |---|---|---|
 | `PX_USE_CCACHE`, `PX_USE_MOLD`, `PX_USE_COMPILE_COMMANDS` | `ON` | Used when found. |
-| `PX_ENABLE_ASAN`, `PX_ENABLE_UBSAN` | `OFF` | Set by the sanitizer presets. |
+| `PX_ENABLE_ASAN`, `PX_ENABLE_UBSAN` | `OFF` | Set by the sanitizer presets. Libs pass the sanitizer link flag on to whatever links them. |
 | `PX_FORCE_ERROR` | `OFF` | Warnings as errors; set by `-strict` presets. |
 | `PX_USE_LTO` | `ON` | LTO in Release and RelWithDebInfo, when supported. |
 | `PX_DEPS_DIR` | `.deps/` | Where dependency sources live (or `$PX_DEPS_DIR`). |
 | `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. |
-| `PX_DIR` | `../framework` | Where px is (or `$PX_DIR`). |
+| `PX_DIR` | empty | px `framework/` dir to use (or `$PX_DIR`); empty: installed or fetched. |
+| `PX_GIT_REPOSITORY`, `PX_GIT_TAG` | px repo, `v0.1.0` | px to fetch when not found. |
 
 `compile_commands.json` is copied to the repo root on every build, so clangd
 works with no setup.
@@ -301,11 +312,14 @@ differently. A different version warns, and an older major version fails.
 The fixtures in `tests/fixtures/` build px in these setups:
 - under a plain CMake parent;
 - nested in another px project;
-- installed and used through `find_package`;
+- installed and used through `find_package`, also from a Release build with
+  LTO and sanitizers (`lib_release`, `consumer_release`);
 - with a conflicting dependency version;
 - as full projects made from the template (`full_project_*`). These are copied
   into the build dir and built with a template preset, `PX_TEST_PRESET`
-  (default `debug-strict`).
+  (default `debug-strict`);
+- as a bare template outside the repo, fetching px from a local git repo
+  (`bootstrap`).
 
 From the repo root:
 

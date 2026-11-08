@@ -86,6 +86,12 @@ function(__make_target target kind)
   else()
     set(scope PUBLIC)
     add_library(${target} ${kind} ${sources})
+    # LTO objects (GCC GIMPLE, LLVM bitcode) in an installed archive link only
+    # with the same compiler's LTO: not for consumers.
+    if(kind STREQUAL "STATIC")
+      set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF
+        INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO OFF)
+    endif()
   endif()
   if(NOT kind STREQUAL "EXE")
     target_sources(${target} ${scope} FILE_SET HEADERS BASE_DIRS "${dir}" FILES ${headers})

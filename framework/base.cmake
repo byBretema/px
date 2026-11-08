@@ -18,9 +18,10 @@ macro(pre_project)
 
   set(__pre_project_done ON)
 
-  # For the justfile. Before project(): PROJECT_IS_TOP_LEVEL isn't set yet.
+  # For the justfile: preset, build dir, px dir. Before project():
+  # PROJECT_IS_TOP_LEVEL isn't set yet.
   if(PX_ACTIVE_PRESET AND CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-    file(WRITE "${CMAKE_SOURCE_DIR}/.build/active_preset" "${PX_ACTIVE_PRESET}\n${CMAKE_BINARY_DIR}\n")
+    file(WRITE "${CMAKE_SOURCE_DIR}/.build/active_preset" "${PX_ACTIVE_PRESET}\n${CMAKE_BINARY_DIR}\n${__base_dir}\n")
   endif()
 
 endmacro()

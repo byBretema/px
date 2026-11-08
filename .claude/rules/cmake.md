@@ -17,7 +17,7 @@ paths:
 - `snake_case`; tests `test_` prefix, plain names, top level only.
 - Libs: real target `<PROJECT_NAME>_<name>`, `EXPORT_NAME <name>`, alias `<PROJECT_NAME>::<name>`. Exes: plain at top level, prefixed when nested.
 - Sources and headers globbed over the whole target dir (extensions only in `utils/sources.cmake`); never listed by hand. All `make_*` go through `__make_target`. Lib headers: `FILE_SET HEADERS` with the dir as include root, installed to `include/<ns>/<name>/`.
-- Standard: `PX_CXX_STANDARD` (project, default 23) as a `cxx_std_<n>` compile feature (`PUBLIC` on libs); `CMAKE_CXX_STANDARD` can only raise it. Dep version floors: `import_dependency(... COMPILERS GNU=13 ...)`, not central. Visibility hidden, PIC on, LTO on Release/RelWithDebInfo when supported.
+- Standard: `PX_CXX_STANDARD` (project, default 23) as a `cxx_std_<n>` compile feature (`PUBLIC` on libs); `CMAKE_CXX_STANDARD` can only raise it. Dep version floors: `import_dependency(... COMPILERS GNU=13 ...)`, not central. Visibility hidden, PIC on, LTO on Release/RelWithDebInfo when supported, never on STATIC libs (installed LTO archives need the same compiler's LTO). Sanitizer compile flags `PRIVATE`; `-fsanitize` link flag `PUBLIC` on libs (their objects need the runtime).
 - Warning flags `PRIVATE`, never leaked to consumers.
 - Deps per target (`DEPS`, `PRIVATE_DEPS`), through the px wrapper `__px_dep_<ns>_<target>` (SUBDIR include, DEFINES; exportable). No catch-all dep target.
 - Compiled libs: `generate_export_header` per lib (`<name>_export.hpp` in a FILE_SET base dir under the binary dir, `<NAME>_API`; STATIC gets `<NAME>_STATIC_DEFINE` PUBLIC, so the macro is empty).

@@ -25,10 +25,18 @@ _num_of_jobs:
     @cores="$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"; \
     echo $(( (cores * {{ cpu_usage }} + 99) / 100 ))
 
+# px's framework dir: PX_DIR, else the one the last configure loaded
+# (configuring first if needed: px may still have to be fetched).
+_px:
+    #!/usr/bin/env bash
+    set -eu
+    if [[ -n "${PX_DIR:-}" ]]; then echo "$PX_DIR"; exit; fi
+    just preset="{{ preset }}" _config >&2
+    sed -n 3p "{{ _active }}"
+
 # --- Auto vars ---
 
 _root := justfile_directory()
-_px := env('PX_DIR', _root / '..' / 'framework')
 
 _build_dir := _root / '.build'
 _active := _build_dir / 'active_preset'
@@ -127,14 +135,10 @@ test *tests: (build tests)
     ctest "${args[@]}" | grep -v "^    Start"
 
 # Install tree into the preset's installDir (.install/<preset>/)
-[no-exit-message]
-install: _config
-    @cmake --build --preset {{ preset }} -j "$(just _num_of_jobs)" --target install
+install: (build "install")
 
 # CPack archive of the install tree (<build>/packages/)
-[no-exit-message]
-package: _config
-    @cmake --build --preset {{ preset }} -j "$(just _num_of_jobs)" --target package
+package: (build "package")
 
 # --- Cleanup ---
 
@@ -159,17 +163,17 @@ _clean_all:
 
 # clang-format over projects/ and tests/
 format:
-    @cmake -P "{{ _px }}/utils/format.cmake"
+    @cmake -P "$(just _px)/utils/format.cmake"
 
 # Fails on unformatted files (what CI runs)
 format_check:
-    @cmake -D CHECK=ON -P "{{ _px }}/utils/format.cmake"
+    @cmake -D CHECK=ON -P "$(just _px)/utils/format.cmake"
 
 # --- Scaffolding ---
 
 add_exe name:
-    @cmake -D "NAME={{ name }}" -D TYPE=EXE -P "{{ _px }}/utils/new_target.cmake"
+    @cmake -D "NAME={{ name }}" -D TYPE=EXE -P "$(just _px)/utils/new_target.cmake"
 
 # SHARED / STATIC / HEADER_ONLY
 add_lib name type="SHARED":
-    @cmake -D "NAME={{ name }}" -D "TYPE={{ type }}" -P "{{ _px }}/utils/new_target.cmake"
+    @cmake -D "NAME={{ name }}" -D "TYPE={{ type }}" -P "$(just _px)/utils/new_target.cmake"

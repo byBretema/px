@@ -72,7 +72,7 @@ jobs:
           path: |
             tests/.deps
             .build/tests/*/.deps
-          key: deps-${{ hashFiles('template/cmake/**', 'tests/fixtures/*/cmake/**') }}
+          key: deps-${{ hashFiles('tests/fixtures/*/cmake/**') }}
           restore-keys: deps-
 
       - name: Cache ccache

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
-find_package(px 0.1 REQUIRED CONFIG PATHS "${CMAKE_CURRENT_LIST_DIR}/../../../framework" NO_DEFAULT_PATH)
+# The template's loader; the driver sets PX_DIR.
+include(${CMAKE_CURRENT_LIST_DIR}/../../../template/cmake/px.cmake)
 
 pre_project()
 project(lib VERSION 1.2.3)
