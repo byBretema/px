@@ -3,6 +3,13 @@
 px follows [semantic versioning](https://semver.org). While in 0.x, a minor
 release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
+## Unreleased
+
+- **Sanitizers**: support is probed at configure, so a toolchain without the
+  sanitizer runtimes (MinGW GCC, for one) fails there with a clear message.
+- **mold**: used for ELF targets only; skipped for Windows (MinGW included)
+  and macOS.
+
 ## 0.1.0
 
 First release.
