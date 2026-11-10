@@ -1,6 +1,7 @@
-# mold (PX_USE_MOLD). Probed: GCC < 12.1 rejects -fuse-ld=mold, and mold can't
-# link Mach-O/PE. CMAKE_LINKER_TYPE (3.29+) would replace this.
-if(PX_USE_MOLD AND NOT MSVC)
+# mold (PX_USE_MOLD): ELF only, it can't link Mach-O/PE (MinGW included).
+# Probed: GCC < 12.1 rejects -fuse-ld=mold. CMAKE_LINKER_TYPE (3.29+) would
+# replace this.
+if(PX_USE_MOLD AND NOT WIN32 AND NOT APPLE)
   find_program(__mold_found mold)
   if(__mold_found)
     include(CheckLinkerFlag)
