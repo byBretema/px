@@ -35,3 +35,23 @@ How sources are handled:
   as a patch.
 - System libraries that can't be fetched (Qt, Boost): a plain
   `find_package()` in `cmake/deps.cmake`, then link their targets in `DEPS`.
+
+## Lock file
+
+Configure writes `cmake/deps.lock`: the commit each dep's URL and `TAG`
+resolved to. Commit it. While a dep's URL and `TAG` match its line, every
+checkout fetches that commit, so a moved tag or a branch `TAG` doesn't change
+the build.
+
+```
+fmt::fmt https://github.com/fmtlib/fmt.git@11.1.4 123913715afeb8a437e6388b4473fcc4753e1c9a
+```
+
+- Changing a dep's URL or `TAG` resolves it again and rewrites its line;
+  removed deps drop out.
+- To take a branch's or moved tag's new commit, delete its line (or the file).
+- Nested px projects share deps, so only the outermost px project's lock is
+  used, and it lists the nested projects' deps too. Under a plain CMake
+  parent it is read but never written.
+- `-D PX_DEPS_LOCK=<file>` uses another file; `-D PX_DEPS_LOCK=` none.
+- Patches aren't in the lock: they are files in the repo already.

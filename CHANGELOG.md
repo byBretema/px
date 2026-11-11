@@ -5,6 +5,12 @@ release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
 ## Unreleased
 
+- **Lock file**: configure writes `cmake/deps.lock`, the commit each dep's
+  URL and `TAG` resolved to, and fetches that commit while they match
+  (`PX_DEPS_LOCK`). Deps are re-fetched once, as their stamps now also hold
+  the commit.
+- **Fix**: the "save your local changes as a patch" hint pointed into px's
+  own dir; it now names the project's `cmake/patches/<ns>.patch`.
 - **Sanitizers**: support is probed at configure, so a toolchain without the
   sanitizer runtimes (MinGW GCC, for one) fails there with a clear message.
 - **mold**: used for ELF targets only; skipped for Windows (MinGW included)

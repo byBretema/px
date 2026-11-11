@@ -19,7 +19,7 @@ endif()
 string(REPLACE "." "\\." px_version_regex "${PX_VERSION}")
 set(deps_dir "${CMAKE_CURRENT_SOURCE_DIR}/.deps")
 set(common -G Ninja -D CMAKE_BUILD_TYPE=Debug -D PX_FORCE_ERROR=ON -D PX_USE_COMPILE_COMMANDS=OFF
-  -D "PX_DEPS_DIR=${deps_dir}" -D "PX_DIR=${repo}/framework")
+  -D "PX_DEPS_DIR=${deps_dir}" -D "PX_DIR=${repo}/framework" -D PX_DEPS_LOCK=)
 
 # <name>_configure and <name>_build tests of fixtures/<SOURCE> (default
 # <name>); the build sets up fixture <name>.
@@ -91,6 +91,17 @@ add_fixture(plain)
 
 # lib under a px project: shared deps, prefixed exe.
 add_fixture(nest)
+
+# deps.lock pins a dep to its commit, not to the one its tag names now
+# (lock_build static_asserts it), and the configure keeps it (lock_kept).
+set(lock_dir "${CMAKE_CURRENT_BINARY_DIR}/lock")
+set(lock_script "${CMAKE_CURRENT_SOURCE_DIR}/lock.cmake")
+add_test(NAME lock_repo COMMAND ${CMAKE_COMMAND} -D MODE=repo -D "DIR=${lock_dir}" -P "${lock_script}")
+add_fixture(lock AFTER lock_repo_done ARGS -D "LOCK_REPO=${lock_dir}/repo"
+  -D "PX_DEPS_LOCK=${lock_dir}/deps.lock" -D "PX_DEPS_DIR=${lock_dir}/.deps")
+add_test(NAME lock_kept COMMAND ${CMAKE_COMMAND} -D MODE=check -D "DIR=${lock_dir}" -P "${lock_script}")
+set_tests_properties(lock_repo PROPERTIES FIXTURES_SETUP lock_repo_done)
+set_tests_properties(lock_kept PROPERTIES FIXTURES_REQUIRED lock)
 
 # The installed lib after another fmt version is loaded: configure must stop.
 add_test(NAME conflict

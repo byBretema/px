@@ -8,6 +8,7 @@ justfile              shortcuts
 CMakePresets.json     build presets
 cmake/px.cmake        loads px (below)
 cmake/deps.cmake      the third-party dependencies, one block each
+cmake/deps.lock       the commit each one resolved to (written by configure)
 cmake/patches/        local changes to dependencies
 projects/<name>/      one target per directory: an exe or a lib
 tests/<name>/         one test per directory

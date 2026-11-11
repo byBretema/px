@@ -20,6 +20,11 @@
 # usable rules, generate fails with "requires target <x> that is not in any
 # export set": use INSTALL_HEADERS, or keep the dep in PRIVATE_DEPS of a
 # SHARED lib.
+#
+# cmake/deps.lock (PX_DEPS_LOCK, empty: none): the commit each dep's URL@TAG
+# resolved to, written on configure. A dep whose URL@TAG matches its line is
+# fetched at that commit, so a moved tag or branch doesn't change the build.
+# Delete a line to resolve its TAG again.
 #-------------------------------------------------------------------------------
 
 include(FetchContent)
@@ -28,6 +33,24 @@ find_package(Git REQUIRED)
 # Sources are shared across build dirs (PX_DEPS_DIR); build trees are not.
 set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/_deps")
 set(FETCHCONTENT_QUIET ON)
+
+# Deps are shared and the first import wins, so only the outermost px
+# project's lock is read, and written only when it's the top-level project.
+get_property(__lock_set GLOBAL PROPERTY __px_lock SET)
+if(NOT __lock_set)
+  if(NOT DEFINED PX_DEPS_LOCK)
+    set(PX_DEPS_LOCK "${PROJECT_SOURCE_DIR}/cmake/deps.lock")
+  endif()
+  set(__lock_lines "")
+  if(PX_DEPS_LOCK AND EXISTS "${PX_DEPS_LOCK}")
+    file(STRINGS "${PX_DEPS_LOCK}" __lock_lines REGEX "^[^#]")
+  endif()
+  set_property(GLOBAL PROPERTY __px_lock "${__lock_lines}")
+  set_property(GLOBAL PROPERTY __px_lock_out "")
+  if(PX_DEPS_LOCK AND PROJECT_IS_TOP_LEVEL)
+    cmake_language(DEFER CALL __write_lock "${PX_DEPS_LOCK}")
+  endif()
+endif()
 
 
 function(import_dependency qualified)
@@ -145,6 +168,7 @@ function(__sync_source out qualified ns url tag patch fetch_id src)
     return()
   endif()
   set_property(GLOBAL PROPERTY __px_fetched_${fetch_id} "${stamp}")
+  __locked_commit(locked "${url}@${tag}")
 
   # Build dirs configured at once share PX_DEPS_DIR.
   file(MAKE_DIRECTORY "${PX_DEPS_DIR}")
@@ -153,24 +177,84 @@ function(__sync_source out qualified ns url tag patch fetch_id src)
     log_fatal("import_dependency(${qualified}): cannot lock ${fetch_id}: ${lock_rc}")
   endif()
 
+  # Stamp file: the stamp, then the fetched commit.
   set(stamp_file "${PX_DEPS_DIR}/${fetch_id}.stamp")
   set(old "")
+  set(commit "")
   if(EXISTS "${stamp_file}" AND IS_DIRECTORY "${src}")
-    file(READ "${stamp_file}" old)
+    file(STRINGS "${stamp_file}" old_lines)
+    list(POP_FRONT old_lines old commit)
   endif()
-  if(old STREQUAL stamp)
+  if(old STREQUAL stamp AND commit AND (NOT locked OR commit STREQUAL locked))
     __warn_if_dirty("${src}" ${qualified})
+    __lock_record(${qualified} "${url}@${tag}" ${commit})
     set(${out} "From cache -> ${qualified}" PARENT_SCOPE)
     return()
   endif()
 
+  set(ref "${tag}")
+  if(locked)
+    set(ref ${locked})
+  endif()
   __check_clean("${src}" ${ns})
-  __fetch_source(${qualified} "${url}" "${tag}" "${patch}" ${fetch_id} "${src}")
-  file(WRITE "${stamp_file}" "${stamp}")
-  if(old)
+  __fetch_source(new_commit ${qualified} "${url}" "${ref}" "${patch}" ${fetch_id} "${src}")
+  file(WRITE "${stamp_file}" "${stamp}\n${new_commit}\n")
+  __lock_record(${qualified} "${url}@${tag}" ${new_commit})
+  if(old STREQUAL stamp AND commit)
+    set(${out} "Updated (${commit} => ${new_commit}, deps.lock) -> ${qualified}" PARENT_SCOPE)
+  elseif(old)
     set(${out} "Updated (${old} => ${stamp}) -> ${qualified}" PARENT_SCOPE)
   else()
     set(${out} "From fetch -> ${qualified}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+
+# The commit deps.lock holds for `source` (URL@TAG), or empty.
+function(__locked_commit out source)
+  get_property(lines GLOBAL PROPERTY __px_lock)
+  foreach(line IN LISTS lines)
+    string(REPLACE " " ";" fields "${line}")
+    list(LENGTH fields len)
+    if(len EQUAL 3)
+      list(GET fields 1 locked_source)
+      if(locked_source STREQUAL source)
+        list(GET fields 2 commit)
+        set(${out} ${commit} PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endforeach()
+  set(${out} "" PARENT_SCOPE)
+endfunction()
+
+
+function(__lock_record qualified source commit)
+  set_property(GLOBAL APPEND PROPERTY __px_lock_out "${qualified} ${source} ${commit}")
+endfunction()
+
+
+# Deferred to the end of the top-level configure: nested px projects import
+# their deps after the parent's deps.cmake. Rewritten only when it changes.
+function(__write_lock file)
+  get_property(lines GLOBAL PROPERTY __px_lock_out)
+  if(NOT lines AND NOT EXISTS "${file}")
+    return()
+  endif()
+  list(SORT lines)
+  list(JOIN lines "\n" lines)
+  string(CONCAT content
+    "# The commit each dep's URL@TAG resolved to, written by px: commit it.\n"
+    "# Delete a line to resolve that TAG again.\n"
+    "${lines}\n")
+  set(old "")
+  if(EXISTS "${file}")
+    file(READ "${file}" old)
+  endif()
+  if(NOT old STREQUAL content)
+    # post_project() forbids source writes after it; this is the one px makes.
+    set(CMAKE_DISABLE_SOURCE_CHANGES OFF)
+    file(WRITE "${file}" "${content}")
   endif()
 endfunction()
 
@@ -277,7 +361,7 @@ endfunction()
 # Built in `dir`.tmp and swapped in when complete: a failed fetch never leaves
 # a half-made `dir`. `git fetch <ref>` takes tags, branches and SHAs alike.
 # The upstream commit is tagged px-base, so `git diff px-base` yields a patch.
-function(__fetch_source qualified url ref patch fetch_id dir)
+function(__fetch_source out qualified url ref patch fetch_id dir)
   set(tmp "${dir}.tmp")
   file(REMOVE_RECURSE "${tmp}")
   file(MAKE_DIRECTORY "${tmp}")
@@ -286,6 +370,10 @@ function(__fetch_source qualified url ref patch fetch_id dir)
   __fetch_ref(${qualified} "${url}" "${ref}" "${tmp}")
   __git("${tmp}" checkout -q FETCH_HEAD)
   __git("${tmp}" tag px-base)
+  execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD
+    WORKING_DIRECTORY "${tmp}"
+    OUTPUT_VARIABLE commit
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if(patch MATCHES "\\.(patch|diff)$")
     __git("${tmp}" apply --whitespace=nowarn "${patch}")
@@ -303,6 +391,7 @@ function(__fetch_source qualified url ref patch fetch_id dir)
 
   file(REMOVE_RECURSE "${dir}")
   file(RENAME "${tmp}" "${dir}")
+  set(${out} ${commit} PARENT_SCOPE)
 endfunction()
 
 
@@ -325,7 +414,7 @@ function(__fetch_ref qualified url ref dir)
   if(unreachable)
     set(why "cannot reach ${url}: check the URL/repo name and the network (private repos need git credentials)")
   else()
-    set(why "TAG '${ref}' not found in ${url}: check the tag, branch or commit name")
+    set(why "'${ref}' not found in ${url}: check the TAG, or its commit in deps.lock")
   endif()
   string(STRIP "${err}" err)
   string(REGEX REPLACE "([^\n]+)" "    \\1" err "${err}")
@@ -385,7 +474,7 @@ function(__check_clean dir ns)
   if(no_base)
     set(base HEAD)
   endif()
-  set(patch_file "${__base_dir}/patches/${ns}.patch")
+  set(patch_file "${PROJECT_SOURCE_DIR}/cmake/patches/${ns}.patch")
   # message() prints indented lines verbatim and rewraps the rest.
   string(REGEX REPLACE "([^\n]+)\n" "    \\1\n" changes "${changes}")
   log_fatal("import_dependency: local changes in ${dir} would be lost by re-fetch.\n"

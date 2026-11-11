@@ -65,7 +65,7 @@ A target sees only the deps it lists. Libraries are linked as
 - [Project](docs/project.md): layout, how px is loaded and versioned,
   cleaning.
 - [Targets](docs/targets.md): `make_*`, deps, exported symbols, defaults.
-- [Dependencies](docs/dependencies.md): `import_dependency`, patches, sources.
+- [Dependencies](docs/dependencies.md): `import_dependency`, patches, sources, lock file.
 - [Configuration](docs/configuration.md): presets, options, customizing,
   formatting.
 - [Install and package](docs/install.md)

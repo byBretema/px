@@ -25,7 +25,7 @@ paths:
 
 ## Dependencies
 - Only through `import_dependency()`; `SUBDIR` required, no auto-detection.
-- Importer owns sources: shallow `git fetch <TAG>` into `PX_DEPS_DIR/<id>-src`, keyed by `<id>.stamp` (URL@TAG + PATCH hash). Sources shared across build dirs; build trees (`<build>/_deps/`) never shared.
+- Importer owns sources: shallow `git fetch <TAG>` (or the `deps.lock` commit) into `PX_DEPS_DIR/<id>-src`, keyed by `<id>.stamp` (URL@TAG + PATCH hash, then the fetched upstream commit). Sources shared across build dirs; build trees (`<build>/_deps/`) never shared.
 - `FetchContent_Declare(SOURCE_DIR ... SYSTEM EXCLUDE_FROM_ALL)` + `MakeAvailable` only for `add_subdirectory`. `EXCLUDE_FROM_ALL` keeps dep install rules out; `setup_export` adds `install(SCRIPT <dep build>/cmake_install.cmake)` only for deps installed targets need, run under the dep's build type (install(EXPORT) rules are per config).
 - Dep install options defaulting OFF as a subproject go ON in `OPTIONS` (harmless: only run when needed). No usable install rules: `INSTALL_HEADERS` (header-only) or keep it out of installed interfaces.
 - `OPTIONS` use `CACHE FORCE`: the only way to override dep cache entries before `add_subdirectory`.
