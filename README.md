@@ -10,6 +10,7 @@ CMake project.
 ```
 framework/    px itself
 template/     the skeleton a new project starts from
+new.cmake     makes a new project from a release's template (via new.sh, new.ps1)
 tests/        px's own tests (CI)
 docs/         the details
 ```
@@ -24,7 +25,24 @@ macOS are supported.
 
 ## Start a project
 
-Copy `template/`, rename the project in its `CMakeLists.txt`, then:
+In a new dir, which becomes the project and names it:
+
+```sh
+mkdir hello && cd hello && curl -fsSL https://github.com/byBretema/px/releases/latest/download/new.sh | sh
+```
+
+```powershell
+mkdir hello; cd hello; irm https://github.com/byBretema/px/releases/latest/download/new.ps1 | iex
+```
+
+This checks for CMake and git, copies the latest release's template and
+makes it a git repo (unless it's inside one). A dir that isn't empty is
+asked about first. Arguments go to CMake (`| sh -s -- -D NAME=<name>` names
+the project apart from its dir; `-D PX_GIT_TAG=v<version>` picks another
+release); both scripts run `new.cmake`, which also runs alone:
+`cmake -P new.cmake`.
+Copying `template/` by hand and renaming `myproj` in its `CMakeLists.txt`
+works too. Then, in it:
 
 ```sh
 just add_exe hello      # projects/hello/
@@ -37,7 +55,7 @@ just --list             # everything else
 `just` only triggers plain CMake: `cmake --preset debug`,
 `cmake --build --preset debug`, `ctest --preset debug`.
 
-The first configure fetches px (tag `v0.1.1`) into `.deps/`, unless px is
+The first configure fetches px (tag `v0.1.2`) into `.deps/`, unless px is
 installed or `PX_DIR` points at a px `framework/` dir. A template copy inside
 this repo needs `PX_DIR=<repo>/framework`.
 

@@ -23,7 +23,7 @@ Options, settable with `-D` or in a preset:
 | `PX_DEPS_DIR` | `.deps/` | Where dependency sources live (or `$PX_DEPS_DIR`). |
 | `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. |
 | `PX_DIR` | empty | px `framework/` dir to use (or `$PX_DIR`); empty: installed or fetched. |
-| `PX_GIT_REPOSITORY`, `PX_GIT_TAG` | px repo, `v0.1.1` | px to fetch when not found. |
+| `PX_GIT_REPOSITORY`, `PX_GIT_TAG` | px repo, `v0.1.2` | px to fetch when not found. |
 
 `compile_commands.json` is copied to the repo root on every build, so clangd
 works with no setup.

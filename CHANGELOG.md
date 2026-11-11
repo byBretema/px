@@ -3,6 +3,16 @@
 px follows [semantic versioning](https://semver.org). While in 0.x, a minor
 release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
+## 0.1.2
+
+- **New project**: `curl -fsSL https://github.com/byBretema/px/releases/latest/download/new.sh | sh`
+  (or `irm …/new.ps1 | iex` on Windows) turns the current dir into a git repo
+  made from the latest release's template, named after the dir. They check
+  for CMake and git, ask before using a dir that isn't empty, and run
+  `new.cmake` (`NAME`, `FORCE`, `PX_GIT_TAG`).
+- **Releases**: a green `v*` tag becomes a GitHub Release, with its
+  CHANGELOG section and `new.cmake`, `new.sh`, `new.ps1` pinned to it.
+
 ## 0.1.1
 
 - **Lock file**: configure writes `cmake/deps.lock`, the commit each dep's

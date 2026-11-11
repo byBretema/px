@@ -178,6 +178,29 @@ set_tests_properties(bootstrap_configure PROPERTIES
   PASS_REGULAR_EXPRESSION "px +-> ${px_version_regex} \\([^)]*/\\.deps/px-HEAD/framework\\)"
   FAIL_REGULAR_EXPRESSION "CMake Error")
 
+# new.cmake run in an empty dir, from the local px repo: its latest tag, the
+# project named after the dir, and a first configure loading px fetched at
+# that tag.
+set(new_dir "${CMAKE_CURRENT_BINARY_DIR}/newproj")
+add_test(NAME new_clean
+  COMMAND sh -c "\"$0\" -E rm -rf \"$1\" && \"$0\" -E make_directory \"$1\"" ${CMAKE_COMMAND} "${new_dir}")
+add_test(NAME new_create COMMAND ${CMAKE_COMMAND} -D "PX_GIT_REPOSITORY=${px_repo}" -P "${repo}/new.cmake")
+# Again, now that the dir isn't empty: refused without FORCE.
+add_test(NAME new_not_empty COMMAND ${CMAKE_COMMAND} -D "PX_GIT_REPOSITORY=${px_repo}" -P "${repo}/new.cmake")
+set_tests_properties(new_create new_not_empty PROPERTIES WORKING_DIRECTORY "${new_dir}")
+set_tests_properties(new_not_empty PROPERTIES FIXTURES_REQUIRED new_created
+  PASS_REGULAR_EXPRESSION "isn't empty: -D FORCE=ON")
+add_test(NAME new_configure
+  COMMAND ${CMAKE_COMMAND} --fresh -S "${new_dir}" -B "${new_dir}/.build" -G Ninja -D "PX_GIT_REPOSITORY=${px_repo}")
+set_tests_properties(new_clean PROPERTIES FIXTURES_SETUP new_cleaned)
+set_tests_properties(new_create PROPERTIES
+  FIXTURES_REQUIRED "bootstrap_repo_done;new_cleaned" FIXTURES_SETUP new_created)
+set_tests_properties(new_configure PROPERTIES
+  FIXTURES_REQUIRED new_created
+  ENVIRONMENT_MODIFICATION PX_DIR=unset:
+  PASS_REGULAR_EXPRESSION "px +-> ${px_version_regex} \\([^)]*/\\.deps/px-v${px_version_regex}/framework\\)\n[^\n]*Project +-> newproj\n"
+  FAIL_REGULAR_EXPRESSION "CMake Error")
+
 # One ccache for all, outside the fixture sources.
 get_property(tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${tests} PROPERTIES ENVIRONMENT "CCACHE_DIR=${CMAKE_CURRENT_BINARY_DIR}/ccache")

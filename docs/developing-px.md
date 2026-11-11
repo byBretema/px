@@ -13,7 +13,8 @@ The fixtures in `tests/fixtures/` build px in these setups:
   into the build dir and built with a template preset, `PX_TEST_PRESET`
   (default `debug-strict`);
 - as a bare template outside the repo, fetching px from a local git repo
-  (`bootstrap`).
+  (`bootstrap`), and a project made by `new.cmake` from that repo's latest
+  tag (`new_*`).
 
 From the repo root:
 
@@ -33,4 +34,7 @@ then `ctest --test-dir .build/tests -j 4`.
    differ.
 2. Add it to `CHANGELOG.md`.
 3. Tag the commit `v<version>` and push the tag; CI checks that the tag
-   matches `framework/version.cmake`.
+   matches `framework/version.cmake`. Once every job passes, CI publishes a
+   GitHub Release: the version's CHANGELOG section as notes, and `new.cmake`
+   and its wrappers `new.sh`, `new.ps1`, pinned to the tag (what the README's
+   one-liners download).
