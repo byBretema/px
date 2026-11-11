@@ -3,7 +3,7 @@
 px follows [semantic versioning](https://semver.org). While in 0.x, a minor
 release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
-## Unreleased
+## 0.1.1
 
 - **Lock file**: configure writes `cmake/deps.lock`, the commit each dep's
   URL and `TAG` resolved to, and fetches that commit while they match

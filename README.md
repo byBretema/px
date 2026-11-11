@@ -37,7 +37,7 @@ just --list             # everything else
 `just` only triggers plain CMake: `cmake --preset debug`,
 `cmake --build --preset debug`, `ctest --preset debug`.
 
-The first configure fetches px (tag `v0.1.0`) into `.deps/`, unless px is
+The first configure fetches px (tag `v0.1.1`) into `.deps/`, unless px is
 installed or `PX_DIR` points at a px `framework/` dir. A template copy inside
 this repo needs `PX_DIR=<repo>/framework`.
 

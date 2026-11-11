@@ -45,8 +45,8 @@ The template loads px through `cmake/px.cmake`, before `project()`, from the
 first of:
 1. `PX_DIR`: a px `framework/` dir (cache variable, or the `PX_DIR`
    environment variable for both CMake and `just`);
-2. an installed px, found by `find_package(px 0.1.0)`;
-3. `PX_GIT_TAG` (default `v0.1.0`) of `PX_GIT_REPOSITORY`, fetched once into
+2. an installed px, found by `find_package(px 0.1.1)`;
+3. `PX_GIT_TAG` (default `v0.1.1`) of `PX_GIT_REPOSITORY`, fetched once into
    the deps dir as `px-<tag>`. A fetched copy is never updated, so the tag
    must not move: change `PX_GIT_TAG` to upgrade.
 

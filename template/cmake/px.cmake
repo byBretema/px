@@ -8,7 +8,7 @@
 # PX_GIT_TAG must be a tag or commit: a fetched copy is never updated.
 
 # The px release this project is written for; also the minimum accepted.
-set(__px_version 0.1.0)
+set(__px_version 0.1.1)
 if(NOT DEFINED PX_GIT_REPOSITORY)
   set(PX_GIT_REPOSITORY https://github.com/byBretema/px.git)
 endif()

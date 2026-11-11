@@ -1,1 +1,1 @@
-set(PX_VERSION 0.1.0)
+set(PX_VERSION 0.1.1)
