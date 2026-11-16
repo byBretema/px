@@ -149,7 +149,6 @@
         "outputOnFailure": true
       },
       "execution": {
-        "noTestsAction": "error",
         "jobs": 8
       }
     },

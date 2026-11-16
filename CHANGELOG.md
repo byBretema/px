@@ -3,6 +3,12 @@
 px follows [semantic versioning](https://semver.org). While in 0.x, a minor
 release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
+## 0.1.3
+
+- **Fix**: `just` (the project list) failed in a project without tests.
+- **Fix**: `just test` / `ctest --preset` failed in a project without tests;
+  the test presets no longer set `noTestsAction` to `error`.
+
 ## 0.1.2
 
 - **New project**: `curl -fsSL https://github.com/byBretema/px/releases/latest/download/new.sh | sh`

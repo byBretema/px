@@ -29,12 +29,11 @@ then `ctest --test-dir .build/tests -j 4`.
 
 ## Releasing
 
-1. Set the version in `framework/version.cmake` and in the template's
-   `cmake/px.cmake` (`__px_version`); the tests' configure fails when they
-   differ.
-2. Add it to `CHANGELOG.md`.
-3. Tag the commit `v<version>` and push the tag; CI checks that the tag
-   matches `framework/version.cmake`. Once every job passes, CI publishes a
-   GitHub Release: the version's CHANGELOG section as notes, and `new.cmake`
-   and its wrappers `new.sh`, `new.ps1`, pinned to the tag (what the README's
-   one-liners download).
+1. Add the version's section to `CHANGELOG.md` (`## X.Y.Z`).
+2. `just publish_tag X.Y.Z`: sets the version in `framework/version.cmake`
+   and the template's `cmake/px.cmake` (`__px_version`), commits everything
+   as `vX.Y.Z`, tags it and pushes the branch and the tag.
+3. CI checks that the tag matches `framework/version.cmake`. Once every job
+   passes, it publishes a GitHub Release: the version's CHANGELOG section as
+   notes, and `new.cmake` and its wrappers `new.sh`, `new.ps1`, pinned to the
+   tag (what the README's one-liners download).
