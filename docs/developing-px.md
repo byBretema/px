@@ -2,29 +2,39 @@
 
 ## Testing
 
-The fixtures in `tests/fixtures/` build px in these setups:
-- under a plain CMake parent;
-- nested in another px project;
-- installed and used through `find_package`, also from a Release build with
-  LTO and sanitizers (`lib_release`, `consumer_release`) and with Ninja
-  Multi-Config (`lib_multi`, `consumer_multi`);
-- with a conflicting dependency version;
-- as full projects made from the template (`full_project_*`). These are copied
-  into the build dir and built with a template preset, `PX_TEST_PRESET`
-  (default `debug-strict`);
-- as a bare template outside the repo, fetching px from a local git repo
-  (`bootstrap`), and a project made by `new.cmake` from that repo's latest
-  tag (`new_*`).
+The test driver (`tests/CMakeLists.txt`) builds these setups, named after
+what they check:
+- `libs_release_lto_asan`: shared, static and header-only libs with patched
+  deps, Release with LTO, ASan and UBSan. Built, tested and installed, then
+  used through `find_package` by a plain Release build
+  (`consume_release_lto_asan`); its `leak` exe must get an LSan report;
+- `libs_multi_config`: the same libs with Ninja Multi-Config, every config
+  built, tested and installed, then consumed (`consume_multi_config`);
+- `nested_px_tsan_lock`: the libs nested in another px project, with TSan
+  (its `race` exe must get a report) and a `deps.lock` that must pin a dep;
+- `template_example_project`: the template with example `projects/` and
+  `tests/` laid over a copy, built with a template preset, `PX_TEST_PRESET`
+  (default `debug`), plus `PX_TEST_CHECKS` (default warnings as errors), and
+  format checked;
+- `new_project_*`: a project made by `new.cmake` from a local git repo of
+  this checkout, whose first configure fetches px at its latest tag, then
+  builds.
+
+Configure-only checks: `dep_version_conflict`, `px_version_rejected_*`,
+`tsan_with_asan_refused`, and MSan, which Clang must build and report
+(`msan_uninit_read`) and other compilers must refuse
+(`msan_refused_without_clang`).
 
 From the repo root:
 
 ```sh
 just test                                  # all
-just test full_project_01 nest             # only these
-just preset=debug-sanitizers test          # full projects with another preset
+just test template_example_project         # only these
+just asan=true ubsan=true test             # template_example_project with other checks
 ```
 
-Plain CMake: `cmake -S tests -B .build/tests [-D PX_TEST_PRESET=<preset>]`,
+Plain CMake: `cmake -S tests -B .build/tests [-D PX_TEST_PRESET=<preset>]
+[-D "PX_TEST_CHECKS=-DPX_ENABLE_ASAN=ON;..."]`,
 then `ctest --test-dir .build/tests -j 4`.
 
 ## Releasing

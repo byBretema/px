@@ -1,24 +1,70 @@
 # Configuration
 
-## Presets
+## Presets and checks
 
-Presets are named `<type>[-<sanitizer>][-strict]`:
+Presets are the build types: `debug`, `profile` (RelWithDebInfo) and
+`release`. Select one with `just preset=<name> build`; `just` then remembers
+the last configured preset. The build goes to `.build/<preset>/`.
 
-- type: `debug`, `profile` (RelWithDebInfo), `release`;
-- sanitizer: `asan`, `ubsan`, `sanitizers` (both);
-- `strict`: warnings are errors.
+Checks are options on top of any preset: sanitizers and warnings as errors.
 
-For example `debug`, `release`, `debug-sanitizers-strict` (what CI runs).
-Select one with `just preset=<name> build`; `just` then remembers the last
-configured preset. The build goes to `.build/<type>[_san]/`.
+| `just` | CMake | |
+|---|---|---|
+| `strict=true` | `-D PX_FORCE_ERRORS=ON` | Warnings are errors (what CI uses). |
+| `asan=true` | `-D PX_ENABLE_ASAN=ON` | Out-of-bounds access, use-after-free, leaks on Linux. |
+| `ubsan=true` | `-D PX_ENABLE_UBSAN=ON` | Undefined behaviour: overflow, bad casts, null access. |
+| `tsan=true` | `-D PX_ENABLE_TSAN=ON` | Data races. 5-15x slower. |
+| `msan=true` | `-D PX_ENABLE_MSAN=ON` | Reads of uninitialized memory. Clang only. |
+| `lsan=true` | `-D PX_ENABLE_LSAN=ON` | Leaks only, cheap. |
+
+```sh
+just asan=true ubsan=true build    # = cmake --preset debug -D PX_ENABLE_ASAN=ON -D PX_ENABLE_UBSAN=ON
+just build                         # same checks: the build dir keeps them
+just asan=false build              # ASan off, UBSan still on
+```
+
+As with any `-D`, a check stays in the build dir's cache until set again
+(`--fresh` clears them all). The configure log prints the active ones
+(`Sanitizers ->`, `Warnings ->`). In an IDE, set them in its CMake cache
+editor or in a personal `CMakeUserPresets.json` (ignored by git):
+
+```json
+{
+  "version": 8,
+  "configurePresets": [
+    { "name": "debug-asan", "inherits": "debug",
+      "cacheVariables": { "PX_ENABLE_ASAN": "ON", "PX_ENABLE_UBSAN": "ON" } }
+  ],
+  "buildPresets": [{ "name": "debug-asan", "configurePreset": "debug-asan" }],
+  "testPresets": [{ "name": "debug-asan", "configurePreset": "debug-asan" }]
+}
+```
+
+It builds into `.build/debug-asan/`, so switching to it and back rebuilds
+nothing. `just preset=debug-asan build` works with it too.
+
+Sanitizers instrument the project's own targets, not its deps:
+- TSan (data races) can't be combined with ASan, MSan or LSan, and misses
+  races inside deps. On kernels with high ASLR entropy, older TSan runtimes
+  abort at startup with "unexpected memory mapping": lower it
+  (`sudo sysctl vm.mmap_rnd_bits=28`) or run with ASLR off
+  (`setarch -R <exe>`);
+- MSan (uninitialized reads) is Clang only and can't be combined with ASan
+  or LSan. Values written by uninstrumented code (deps, the standard
+  library) count as uninitialized, so expect false positives;
+- LSan (leaks) is already part of ASan on Linux; alone it is the cheap
+  leak-only check;
+- MSVC has ASan only.
+
+Combinations the compilers reject fail at configure.
 
 Options, settable with `-D` or in a preset:
 
 | Option | Default | |
 |---|---|---|
 | `PX_USE_CCACHE`, `PX_USE_MOLD`, `PX_USE_COMPILE_COMMANDS` | `ON` | Used when found. |
-| `PX_ENABLE_ASAN`, `PX_ENABLE_UBSAN` | `OFF` | Set by the sanitizer presets. Libs pass the sanitizer link flag on to whatever links them. |
-| `PX_FORCE_ERROR` | `OFF` | Warnings as errors; set by `-strict` presets. |
+| `PX_ENABLE_ASAN`, `PX_ENABLE_UBSAN`, `PX_ENABLE_TSAN`, `PX_ENABLE_MSAN`, `PX_ENABLE_LSAN` | `OFF` | Sanitizers, see above. Libs pass the sanitizer link flag on to whatever links them. |
+| `PX_FORCE_ERRORS` | `OFF` | Warnings as errors (`just strict=true`). |
 | `PX_USE_LTO` | `ON` | LTO in Release and RelWithDebInfo, when supported. |
 | `PX_DEPS_DIR` | `.deps/` | Where dependency sources live (or `$PX_DEPS_DIR`). |
 | `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. |

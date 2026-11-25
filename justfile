@@ -1,7 +1,16 @@
 set shell := ["bash", "-ceu"]
 
-# Template preset the full projects build with
-preset := 'debug-strict'
+# Template preset and checks (true / false) template_example_project builds with
+preset := 'debug'
+strict := 'true'
+asan := 'false'
+ubsan := 'false'
+tsan := 'false'
+msan := 'false'
+lsan := 'false'
+
+_checks := '-DPX_FORCE_ERRORS=' + strict + ';-DPX_ENABLE_ASAN=' + asan + ';-DPX_ENABLE_UBSAN=' + ubsan + \
+    ';-DPX_ENABLE_TSAN=' + tsan + ';-DPX_ENABLE_MSAN=' + msan + ';-DPX_ENABLE_LSAN=' + lsan
 
 _build := justfile_directory() / '.build' / 'tests'
 
@@ -9,9 +18,9 @@ _build := justfile_directory() / '.build' / 'tests'
 default:
     @just --list
 
-# Fixtures under tests/fixtures: all, or the named ones (e.g. full_project_01)
+# Fixtures under tests/fixtures: all, or the named ones (e.g. template_example_project)
 test *names:
-    @cmake -S tests -B "{{ _build }}" -D PX_TEST_PRESET={{ preset }} > /dev/null
+    @cmake -S tests -B "{{ _build }}" -D PX_TEST_PRESET={{ preset }} -D "PX_TEST_CHECKS={{ _checks }}" > /dev/null
     @ctest --test-dir "{{ _build }}" -j 4 --output-on-failure {{ if names == "" { "" } else { '-R "^(' + replace(names, ' ', '|') + ')(_|$)"' } }}
 
 # Sets the version (framework and template), commits everything as v<version>,

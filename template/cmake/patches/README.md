@@ -47,4 +47,4 @@ Point the dependency's `PATCH` at the new file (dropping any previous one) and
 reconfigure. Configure prints these same commands when a re-fetch would
 otherwise discard local edits.
 
-Both formats are exercised by the px repo's `tests/fixtures/lib`.
+Both formats are exercised by the px repo's `tests/fixtures/libs_with_deps`.

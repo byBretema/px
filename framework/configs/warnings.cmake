@@ -1,4 +1,4 @@
-# Warnings of own targets (PX_FORCE_ERROR: as errors). PX_EXTRA_WARNINGS,
+# Warnings of own targets (PX_FORCE_ERRORS: as errors). PX_EXTRA_WARNINGS,
 # read when each target is made, go last, so they can also turn px's off
 # (-Wno-shadow).
 
@@ -63,7 +63,7 @@ function(setup_warnings project_name)
     $<$<COMPILE_LANGUAGE:CXX>:-Wuseless-cast>
   )
 
-  if(PX_FORCE_ERROR)
+  if(PX_FORCE_ERRORS)
     set_target_properties(${project_name} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
   endif()
 

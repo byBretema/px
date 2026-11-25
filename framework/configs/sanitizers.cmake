@@ -1,17 +1,29 @@
-# Sanitizers: PX_ENABLE_ASAN, PX_ENABLE_UBSAN.
+# Sanitizers: PX_ENABLE_ASAN, PX_ENABLE_UBSAN, PX_ENABLE_TSAN, PX_ENABLE_MSAN,
+# PX_ENABLE_LSAN. Only own targets are instrumented: deps, and so races or
+# uninitialized memory inside them, are not (MSan reports false positives
+# for whatever uninstrumented code initializes).
 
 set(__san_flags "")
-if(PX_ENABLE_ASAN)
-  list(APPEND __san_flags address)
-endif()
-if(PX_ENABLE_UBSAN)
-  list(APPEND __san_flags undefined)
-endif()
+foreach(__san ASAN=address UBSAN=undefined TSAN=thread MSAN=memory LSAN=leak)
+  string(REPLACE "=" ";" __san "${__san}")
+  list(GET __san 0 __san_option)
+  list(GET __san 1 __san_flag)
+  if(PX_ENABLE_${__san_option})
+    list(APPEND __san_flags ${__san_flag})
+  endif()
+endforeach()
 list(JOIN __san_flags "," __san_flags)
 
+if(PX_ENABLE_TSAN AND (PX_ENABLE_ASAN OR PX_ENABLE_MSAN OR PX_ENABLE_LSAN))
+  log_fatal("PX_ENABLE_TSAN: TSan can't be combined with ASan, MSan or LSan")
+endif()
+if(PX_ENABLE_MSAN AND (PX_ENABLE_ASAN OR PX_ENABLE_LSAN))
+  log_fatal("PX_ENABLE_MSAN: MSan can't be combined with ASan or LSan")
+endif()
+
 if(MSVC)
-  if(PX_ENABLE_UBSAN)
-    log_fatal("PX_ENABLE_UBSAN: UBSan is not supported by MSVC, use an ASan-only preset")
+  if(PX_ENABLE_UBSAN OR PX_ENABLE_TSAN OR PX_ENABLE_MSAN OR PX_ENABLE_LSAN)
+    log_fatal("MSVC only has ASan (PX_ENABLE_ASAN): use an ASan-only preset")
   endif()
   # /fsanitize=address rejects CMake's Debug /RTC*. Deps keep theirs (no ASan).
   if(PX_ENABLE_ASAN)
@@ -19,8 +31,11 @@ if(MSVC)
       string(REGEX REPLACE "/RTC[1csu]*" "" CMAKE_${lang}_FLAGS_DEBUG "${CMAKE_${lang}_FLAGS_DEBUG}")
     endforeach()
   endif()
+elseif(PX_ENABLE_MSAN AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  log_fatal("PX_ENABLE_MSAN: MSan needs Clang (CC=clang CXX=clang++), not ${CMAKE_CXX_COMPILER_ID}")
 elseif(__san_flags)
-  # Not every toolchain ships the runtimes (MinGW GCC, for one).
+  # Not every toolchain ships the runtimes (MinGW GCC, for one; TSan, MSan
+  # and LSan only exist on some platforms).
   include(CheckCXXSourceCompiles)
   string(MAKE_C_IDENTIFIER "__px_sanitize_${__san_flags}" __san_ok)
   set(CMAKE_REQUIRED_FLAGS "-fsanitize=${__san_flags}")
@@ -30,7 +45,7 @@ elseif(__san_flags)
   unset(CMAKE_REQUIRED_QUIET)
   if(NOT ${__san_ok})
     log_fatal("${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} can't build with -fsanitize=${__san_flags}: "
-      "this toolchain has no sanitizer runtime (PX_ENABLE_ASAN/PX_ENABLE_UBSAN)")
+      "this toolchain has no runtime for it on this platform (PX_ENABLE_*SAN)")
   endif()
 endif()
 

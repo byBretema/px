@@ -49,21 +49,19 @@ jobs:
         run: |
           pipx install "clang-format==$(sed -n 's/^# clang-format-version: *\([0-9.]*\).*/\1/p' template/.clang-format).*"
 
-      # On the full projects, as instantiated from the template.
+      # On template_example_project, as instantiated from the template.
       - name: Check
         run: |
           cmake -S tests -B .build/tests
           ctest --test-dir .build/tests -R '_(copy|format)$' --output-on-failure
 
   build:
-    name: ${{ matrix.compiler }} / ${{ matrix.preset }}
+    name: ${{ matrix.compiler }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         compiler: [gcc, clang]
-        # Sanitizers + warnings as errors in one build per compiler.
-        preset: [debug-sanitizers-strict]
 
     env:
       CC: ${{ matrix.compiler == 'gcc' && 'gcc' || 'clang' }}
@@ -78,6 +76,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ninja-build ccache mold libcurl4-openssl-dev libssl-dev libclang-rt-18-dev
+
+      # TSan aborts ("unexpected memory mapping") when ASLR entropy is above
+      # what its runtime expects (GCC 13 / Clang 18 runtimes don't work around
+      # it). Per-VM, so it's gone after the job; a no-op where sysctl isn't allowed.
+      - name: Lower mmap ASLR entropy for TSan
+        run: sudo sysctl vm.mmap_rnd_bits=28 || true
 
       # Dependency sources are reused when their stamp (URL, TAG, PATCH) matches,
       # so a stale cache only costs a re-fetch of the deps that changed.
@@ -94,13 +98,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .build/tests/ccache
-          key: ccache-${{ matrix.compiler }}-${{ matrix.preset }}-${{ github.sha }}
-          restore-keys: ccache-${{ matrix.compiler }}-${{ matrix.preset }}-
+          key: ccache-${{ matrix.compiler }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.compiler }}-
 
-      # Fixtures, and the full projects built with the template's preset.
+      # All setups; template_example_project built with the template's debug preset
+      # plus ASan, UBSan and warnings as errors.
       - name: Test
         run: |
-          cmake -S tests -B .build/tests -D PX_TEST_PRESET=${{ matrix.preset }}
+          cmake -S tests -B .build/tests -D PX_TEST_PRESET=debug \
+            "-DPX_TEST_CHECKS=-DPX_FORCE_ERRORS=ON;-DPX_ENABLE_ASAN=ON;-DPX_ENABLE_UBSAN=ON"
           ctest --test-dir .build/tests -j 4 -E '_format$' --output-on-failure
 
   # A green release tag becomes a GitHub Release: its CHANGELOG section as

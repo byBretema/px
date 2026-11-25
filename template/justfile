@@ -5,6 +5,16 @@ set shell := ["bash", "-ceu"]
 # Defaults to the last configured preset (see _active).
 preset := `p="$(sed -n 1p .build/active_preset 2>/dev/null || true)"; echo "${p:-debug}"`
 config_flags := '' # --fresh
+
+# Checks: true / false. Given ones reconfigure; the build dir's cache keeps
+# them (as with cmake -D) until set again. CMake rejects bad combinations.
+strict := '' # warnings as errors
+asan := ''
+ubsan := ''
+tsan := ''
+msan := '' # Clang only
+lsan := ''
+
 build_flags := '' # --clean-first
 cpu_usage := '80'
 
@@ -43,6 +53,14 @@ _active := _build_dir / 'active_preset'
 _cache_dir := _root / '.cache'
 _deps_dir := _root / '.deps'
 
+_checks := \
+    (if strict != '' { '-D PX_FORCE_ERRORS=' + strict + ' ' } else { '' }) + \
+    (if asan != '' { '-D PX_ENABLE_ASAN=' + asan + ' ' } else { '' }) + \
+    (if ubsan != '' { '-D PX_ENABLE_UBSAN=' + ubsan + ' ' } else { '' }) + \
+    (if tsan != '' { '-D PX_ENABLE_TSAN=' + tsan + ' ' } else { '' }) + \
+    (if msan != '' { '-D PX_ENABLE_MSAN=' + msan + ' ' } else { '' }) + \
+    (if lsan != '' { '-D PX_ENABLE_LSAN=' + lsan + ' ' } else { '' })
+
 _projects := `shopt -s nullglob; for d in projects/*/; do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 _tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 
@@ -61,6 +79,9 @@ list *target:
 _list_:
     @just _print_list "Available projects" "{{ _projects }}"
     @just _print_list "Available tests" "{{ _tests }}"
+    @echo "Checks (e.g. just asan=true ubsan=true build; =false turns one off):"
+    @echo "    strict asan ubsan tsan msan lsan"
+    @echo
 
 _list_all:
     @just _list_
@@ -71,23 +92,23 @@ _list_all:
 # --- Config ---
 
 # Always configures (e.g. after editing CMakePresets.json)
-config:
-    @echo
-    @echo "- - - - - - - - - - - - - - - - - [ CONFIG ] - - - - - - - - - - - - - - - - -"
-    @cmake -S "{{ _root }}" --preset {{ preset }} {{ config_flags }}
+config: (_config "always")
 
-# Configures only on first use, preset switch or config_flags; otherwise
-# `cmake --build` re-runs CMake by itself when CMake files change.
+# Configures only on first use, preset switch, config_flags or checks;
+# otherwise `cmake --build` re-runs CMake by itself when CMake files change.
 [private]
-_config:
+_config when="needed":
     #!/usr/bin/env bash
     set -eu
     active="$(sed -n 1p "{{ _active }}" 2>/dev/null || true)"
     dir="$(sed -n 2p "{{ _active }}" 2>/dev/null || true)"
-    if [[ "{{ preset }}" == "$active" && -f "$dir/CMakeCache.txt" && -z "{{ config_flags }}" ]]; then
+    if [[ "{{ when }}" == "needed" && "{{ preset }}" == "$active" && -f "$dir/CMakeCache.txt" \
+          && -z "{{ config_flags }}{{ _checks }}" ]]; then
         exit 0
     fi
-    just preset="{{ preset }}" config_flags="{{ config_flags }}" config
+    echo
+    echo "- - - - - - - - - - - - - - - - - [ CONFIG ] - - - - - - - - - - - - - - - - -"
+    cmake -S "{{ _root }}" --preset {{ preset }} {{ _checks }} {{ config_flags }}
 
 # --- Per target ---
 

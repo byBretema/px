@@ -3,6 +3,28 @@
 px follows [semantic versioning](https://semver.org). While in 0.x, a minor
 release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
+## 0.1.4
+
+- **Checks instead of preset variants**: presets are now only `debug`,
+  `profile` and `release`. Sanitizers and warnings as errors are options on
+  top of any of them: `just asan=true ubsan=true strict=true build`, or
+  `-D PX_ENABLE_ASAN=ON` etc. with plain CMake. They stay in the build dir
+  until set again, and the configure log shows them. The `*-asan`,
+  `*-sanitizers`, `*-strict`, ... presets are gone, and every preset builds
+  into `.build/<preset>/`.
+- **Sanitizers**: TSan, MSan (Clang) and LSan (`PX_ENABLE_TSAN`,
+  `PX_ENABLE_MSAN`, `PX_ENABLE_LSAN`; `just tsan=true` ...). Combinations
+  the compilers reject fail at configure.
+- **Renamed** `PX_FORCE_ERROR` to `PX_FORCE_ERRORS`; the old name is
+  ignored.
+- **Presets** have a display name and a description for IDEs.
+- The template's `.gitignore` ignores `CMakeUserPresets.json`.
+- **px's tests**: 4 builds per compiler instead of about 14, each
+  combining several checks and named after them (`libs_release_lto_asan`,
+  `libs_multi_config`, `nested_px_tsan_lock`, `template_example_project`).
+  The new-project test now also builds. Dropped: the plain CMake parent and
+  the Debug install. CI lowers ASLR entropy so TSan can start.
+
 ## 0.1.3
 
 - **Fix**: `just` (the project list) failed in a project without tests.

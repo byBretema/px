@@ -1,11 +1,9 @@
-# cmake -D OUT=<dir> -D REPO=<px checkout> -D FETCHED=<dir> -P bootstrap.cmake
+# cmake -D OUT=<dir> -D REPO=<px checkout> -P px_repo.cmake
 # Makes OUT a one-commit git repo of the checkout's framework/ and template/
-# as they are on disk (uncommitted changes included), tagged v<px version>,
-# and removes FETCHED, the copy a previous run fetched, so the bootstrap
-# fetches this one.
+# as they are on disk (uncommitted changes included), tagged v<px version>.
 cmake_minimum_required(VERSION 3.28)
 
-file(REMOVE_RECURSE "${OUT}" "${FETCHED}")
+file(REMOVE_RECURSE "${OUT}")
 
 foreach(dir framework template)
   set(DEST "${OUT}/${dir}")

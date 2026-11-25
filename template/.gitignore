@@ -7,6 +7,8 @@
 .cache/
 build/
 compile_commands.json
+# Personal presets (CMake reads it next to CMakePresets.json).
+CMakeUserPresets.json
 
 
 # --- Claude Code --------------------------------------------------------------

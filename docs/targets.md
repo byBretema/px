@@ -39,8 +39,9 @@ What every target gets without asking:
 - the project's C++ standard (23 by default; `set(PX_CXX_STANDARD 20)` before
   `post_project()` changes it);
 - strict warnings (`-Wall -Wextra -Wconversion ...`, `/W4` on MSVC), errors
-  with the `*-strict` presets;
-- sanitizers with the `*-asan`, `*-ubsan`, `*-sanitizers` presets;
+  with `strict=true` (`PX_FORCE_ERRORS`);
+- sanitizers with `asan=true`, `tsan=true`, ... (`PX_ENABLE_*SAN`), see
+  [Configuration](configuration.md);
 - hidden symbol visibility, PIC, and LTO in Release and RelWithDebInfo
   (not for STATIC libs: LTO objects in an installed archive only link with
   the same compiler's LTO);
