@@ -54,7 +54,13 @@ Sanitizers instrument the project's own targets, not its deps:
   library) count as uninitialized, so expect false positives;
 - LSan (leaks) is already part of ASan on Linux; alone it is the cheap
   leak-only check;
-- MSVC has ASan only.
+- Windows: MSVC has ASan only, clang-cl ASan and UBSan. ASan turns
+  incremental linking off for own targets and copies its runtime DLL
+  (`clang_rt.asan_dynamic-<arch>.dll`) next to each exe, so they also run
+  outside a developer prompt. Clang's ASan rejects the debug CRT, so with
+  clang-cl an ASan build uses the release CRT (`/MD`, or `/MT` if
+  `CMAKE_MSVC_RUNTIME_LIBRARY` asks for the static one) for the whole tree,
+  deps included; the configure log shows it (`CRT ->`).
 
 Combinations the compilers reject fail at configure.
 

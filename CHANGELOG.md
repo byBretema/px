@@ -3,6 +3,14 @@
 px follows [semantic versioning](https://semver.org). While in 0.x, a minor
 release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
+## 0.1.5
+
+- **Sanitizers on Windows**: clang-cl gets UBSan, and its sanitizer runtime
+  is linked (CMake links clang-cl without the driver, so ASan builds failed
+  to link). Clang ASan builds use the release CRT for the whole tree, since
+  it rejects the debug one. ASan turns incremental linking off and copies
+  its runtime DLL next to each exe.
+
 ## 0.1.4
 
 - **Checks instead of preset variants**: presets are now only `debug`,
