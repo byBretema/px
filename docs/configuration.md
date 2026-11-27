@@ -73,7 +73,7 @@ Options, settable with `-D` or in a preset:
 | `PX_FORCE_ERRORS` | `OFF` | Warnings as errors (`just strict=true`). |
 | `PX_USE_LTO` | `ON` | LTO in Release and RelWithDebInfo, when supported. |
 | `PX_DEPS_DIR` | `.deps/` | Where dependency sources live (or `$PX_DEPS_DIR`). |
-| `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. |
+| `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. On Windows they keep the project's CRT (`/MDd` in Debug): MSVC can't link objects of two CRTs. |
 | `PX_DIR` | empty | px `framework/` dir to use (or `$PX_DIR`); empty: installed or fetched. |
 | `PX_GIT_REPOSITORY`, `PX_GIT_TAG` | px repo, `v<__px_version>` (`cmake/px.cmake`) | px to fetch when not found. |
 

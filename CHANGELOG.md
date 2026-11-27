@@ -10,6 +10,10 @@ release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
   to link). Clang ASan builds use the release CRT for the whole tree, since
   it rejects the debug one. ASan turns incremental linking off and copies
   its runtime DLL next to each exe.
+- **Fix**: on Windows, a Debug project failed to link compiled C++ deps
+  (LNK2038): deps build as Release with the release CRT. They now keep the
+  project's CRT (debug CRT in Debug), still optimized. Deps below
+  `cmake_minimum_required(3.15)` get it too.
 
 ## 0.1.4
 

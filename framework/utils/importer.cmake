@@ -269,6 +269,22 @@ function(__build_dep fetch_id src build_type)
   # Plain set(), not CACHE FORCE: the directory var set by project() would
   # shadow it, and forcing the cache can loop reconfigures.
   if(build_type)
+    # MSVC links only objects of one CRT: an optimized dep of a Debug project
+    # keeps the debug CRT, which its own config would swap for the release one.
+    if(MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+      set(crt "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+      if(NOT crt)
+        set(crt "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+      endif()
+      string(TOLOWER "${CMAKE_BUILD_TYPE}" project_type)
+      set(is_debug 0)
+      if(project_type STREQUAL "debug")
+        set(is_debug 1)
+      endif()
+      string(REPLACE "$<CONFIG:Debug>" "$<BOOL:${is_debug}>" CMAKE_MSVC_RUNTIME_LIBRARY "${crt}")
+      # Deps below cmake_minimum_required(3.15) would ignore it otherwise.
+      set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)
+    endif()
     set(CMAKE_BUILD_TYPE "${build_type}")
   endif()
   # CMake 4 rejects cmake_minimum_required() below 3.5.
