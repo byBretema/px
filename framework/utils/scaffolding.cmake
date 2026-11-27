@@ -106,6 +106,7 @@ function(__make_target target kind)
   target_include_directories(${target} PRIVATE "${PROJECT_SOURCE_DIR}/vendor")
   setup_warnings(${target})
   setup_sanitizers(${target})
+  setup_hardening(${target})
 
   if(kind STREQUAL "SHARED")
     # Deferred, so links added after make_lib count. EVAL: DEFER would

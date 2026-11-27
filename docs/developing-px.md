@@ -9,7 +9,9 @@ what they check:
   used through `find_package` by a plain Release build
   (`consume_release_lto_asan`); its `leak` exe must get an LSan report;
 - `libs_multi_config`: the same libs with Ninja Multi-Config, every config
-  built, tested and installed, then consumed (`consume_multi_config`);
+  built, tested and installed, then consumed (`consume_multi_config`).
+  Hardening aborts a buffer overflow in Release and an out-of-bounds index
+  in Debug (`hardened`);
 - `nested_px_tsan_lock`: the libs nested in another px project, with TSan
   (its `race` exe must get a report) and a `deps.lock` that must pin a dep;
 - `template_example_project`: the template with example `projects/` and

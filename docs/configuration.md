@@ -16,6 +16,8 @@ Checks are options on top of any preset: sanitizers and warnings as errors.
 | `tsan=true` | `-D PX_ENABLE_TSAN=ON` | Data races. 5-15x slower. |
 | `msan=true` | `-D PX_ENABLE_MSAN=ON` | Reads of uninitialized memory. Clang only. |
 | `lsan=true` | `-D PX_ENABLE_LSAN=ON` | Leaks only, cheap. |
+| `hardening=false` | `-D PX_ENABLE_HARDENING=OFF` | Hardening is on by default, see below. |
+| `stl_checks=true` | `-D PX_ENABLE_STL_ASSERTIONS=ON` | Standard library bounds checks in every config, not only Debug. |
 
 ```sh
 just asan=true ubsan=true build    # = cmake --preset debug -D PX_ENABLE_ASAN=ON -D PX_ENABLE_UBSAN=ON
@@ -64,6 +66,21 @@ Sanitizers instrument the project's own targets, not its deps:
 
 Combinations the compilers reject fail at configure.
 
+Hardening (on by default, own targets only) makes a memory bug abort with a
+message on stderr (`*** buffer overflow detected ***`, `stack smashing
+detected`), instead of running on with corrupted memory. It costs about
+0-3%, and matches what Linux distros build their packages with:
+- `-fstack-protector-strong`, `-fstack-clash-protection`, `-fcf-protection`
+  (x86) or `-mbranch-protection=standard` (AArch64), and `-z relro -z now`
+  on ELF, where the toolchain supports them;
+- `_FORTIFY_SOURCE=3` in optimized builds without sanitizers (they check
+  the same calls), not on MinGW;
+- standard library assertions (`_GLIBCXX_ASSERTIONS`, libc++'s fast
+  hardening mode) in Debug: bounds checks on `operator[]`, `front()`, ...
+  They also abort on bugs that seemed to work, so they are opt-in for
+  other builds (`stl_checks=true`);
+- nothing on MSVC: `/GS`, `/DYNAMICBASE` and `/NXCOMPAT` are its defaults.
+
 Options, settable with `-D` or in a preset:
 
 | Option | Default | |
@@ -71,6 +88,8 @@ Options, settable with `-D` or in a preset:
 | `PX_USE_CCACHE`, `PX_USE_MOLD`, `PX_USE_COMPILE_COMMANDS` | `ON` | Used when found. |
 | `PX_ENABLE_ASAN`, `PX_ENABLE_UBSAN`, `PX_ENABLE_TSAN`, `PX_ENABLE_MSAN`, `PX_ENABLE_LSAN` | `OFF` | Sanitizers, see above. Libs pass the sanitizer link flag on to whatever links them. |
 | `PX_FORCE_ERRORS` | `OFF` | Warnings as errors (`just strict=true`). |
+| `PX_ENABLE_HARDENING` | `ON` | Hardening, see above (`just hardening=false`). |
+| `PX_ENABLE_STL_ASSERTIONS` | `OFF` | Standard library assertions beyond Debug (`just stl_checks=true`). |
 | `PX_USE_LTO` | `ON` | LTO in Release and RelWithDebInfo, when supported. |
 | `PX_DEPS_DIR` | `.deps/` | Where dependency sources live (or `$PX_DEPS_DIR`). |
 | `PX_DEPS_BUILD_TYPE` | `Release` | Build type of dependencies. On Windows they keep the project's CRT (`/MDd` in Debug): MSVC can't link objects of two CRTs. |

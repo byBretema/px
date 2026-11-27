@@ -95,6 +95,16 @@ add_test(NAME libs_release_lto_asan_leak COMMAND libs_release_lto_asan/bin/leak)
 set_tests_properties(libs_release_lto_asan_leak PROPERTIES
   FIXTURES_REQUIRED libs_release_lto_asan PASS_REGULAR_EXPRESSION "LeakSanitizer: detected memory leaks")
 
+# Hardening aborts on a buffer overflow (fortify: optimized builds only) and,
+# in Debug, on an out-of-bounds index (STL assertions). Through sh: ctest
+# fails an aborted process whatever its output.
+add_test(NAME libs_multi_config_hardened_fortify COMMAND sh -c "libs_multi_config/bin/Release/hardened fortify 16 || :")
+add_test(NAME libs_multi_config_hardened_stl COMMAND sh -c "libs_multi_config/bin/Debug/hardened stl 1 || :")
+set_tests_properties(libs_multi_config_hardened_fortify PROPERTIES
+  FIXTURES_REQUIRED libs_multi_config PASS_REGULAR_EXPRESSION "buffer overflow detected")
+set_tests_properties(libs_multi_config_hardened_stl PROPERTIES
+  FIXTURES_REQUIRED libs_multi_config PASS_REGULAR_EXPRESSION "[Aa]ssertion")
+
 # libs_with_deps under a px project (shared deps, prefixed exe), with TSan:
 # - deps.lock pins a dep to its commit, not to the one its tag names now
 #   (_build static_asserts it), and the configure keeps it (_kept);

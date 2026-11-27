@@ -86,6 +86,7 @@ macro(post_project)
   include(${__base_dir}/configs/defaults.cmake)
   include(${__base_dir}/configs/warnings.cmake)
   include(${__base_dir}/configs/sanitizers.cmake)
+  include(${__base_dir}/configs/hardening.cmake)
 
   # Generated files in a globbed target dir would be compiled.
   set(CMAKE_DISABLE_SOURCE_CHANGES ON)

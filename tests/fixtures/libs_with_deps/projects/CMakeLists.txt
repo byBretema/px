@@ -1,3 +1,4 @@
+add_subdirectory(hardened)
 add_subdirectory(hdr)
 add_subdirectory(leak)
 add_subdirectory(shl)

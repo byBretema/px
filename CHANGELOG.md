@@ -5,6 +5,12 @@ release may break projects, so `find_package(px 0.1)` accepts only `0.1.x`.
 
 ## 0.1.5
 
+- **Hardening**, on by default for own targets: stack protector, stack
+  clash protection, CET / branch protection, relro/now, `_FORTIFY_SOURCE=3`
+  in optimized builds, and standard library assertions in Debug. A memory
+  bug now aborts with a message instead of corrupting memory. Off with
+  `just hardening=false` (`PX_ENABLE_HARDENING`); STL assertions in every
+  config with `just stl_checks=true` (`PX_ENABLE_STL_ASSERTIONS`).
 - **Sanitizers on Windows**: clang-cl gets UBSan, and its sanitizer runtime
   is linked (CMake links clang-cl without the driver, so ASan builds failed
   to link). Clang ASan builds use the release CRT for the whole tree, since

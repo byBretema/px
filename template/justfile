@@ -14,6 +14,8 @@ ubsan := ''
 tsan := ''
 msan := '' # Clang only
 lsan := ''
+hardening := '' # on by default
+stl_checks := '' # STL assertions beyond Debug
 
 build_flags := '' # --clean-first
 cpu_usage := '80'
@@ -59,7 +61,9 @@ _checks := \
     (if ubsan != '' { '-D PX_ENABLE_UBSAN=' + ubsan + ' ' } else { '' }) + \
     (if tsan != '' { '-D PX_ENABLE_TSAN=' + tsan + ' ' } else { '' }) + \
     (if msan != '' { '-D PX_ENABLE_MSAN=' + msan + ' ' } else { '' }) + \
-    (if lsan != '' { '-D PX_ENABLE_LSAN=' + lsan + ' ' } else { '' })
+    (if lsan != '' { '-D PX_ENABLE_LSAN=' + lsan + ' ' } else { '' }) + \
+    (if hardening != '' { '-D PX_ENABLE_HARDENING=' + hardening + ' ' } else { '' }) + \
+    (if stl_checks != '' { '-D PX_ENABLE_STL_ASSERTIONS=' + stl_checks + ' ' } else { '' })
 
 _projects := `shopt -s nullglob; for d in projects/*/; do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
 _tests := `   shopt -s nullglob; for d in tests/*/;    do [ -f "$d/CMakeLists.txt" ] && basename "$d"; done`
@@ -80,7 +84,7 @@ _list_:
     @just _print_list "Available projects" "{{ _projects }}"
     @just _print_list "Available tests" "{{ _tests }}"
     @echo "Checks (e.g. just asan=true ubsan=true build; =false turns one off):"
-    @echo "    strict asan ubsan tsan msan lsan"
+    @echo "    strict asan ubsan tsan msan lsan hardening stl_checks"
     @echo
 
 _list_all:

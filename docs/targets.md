@@ -42,6 +42,8 @@ What every target gets without asking:
   with `strict=true` (`PX_FORCE_ERRORS`);
 - sanitizers with `asan=true`, `tsan=true`, ... (`PX_ENABLE_*SAN`), see
   [Configuration](configuration.md);
+- hardening (stack protector, `_FORTIFY_SOURCE`, STL assertions in Debug,
+  ...), off with `hardening=false` (`PX_ENABLE_HARDENING`);
 - hidden symbol visibility, PIC, and LTO in Release and RelWithDebInfo
   (not for STATIC libs: LTO objects in an installed archive only link with
   the same compiler's LTO);
